@@ -1,7 +1,7 @@
 # Project
-dataset/data
-dataset/temp
-logs
+dataset/
+logs/
+model/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

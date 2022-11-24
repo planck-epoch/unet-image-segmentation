@@ -29,11 +29,7 @@ def four_point_transform(image, pts):
     heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
     maxHeight = max(int(heightA), int(heightB))
 
-    dst = np.array([
-        [0, 0],
-        [maxWidth - 1, 0],
-        [maxWidth - 1, maxHeight - 1],
-        [0, maxHeight - 1]], dtype="float32")
+    dst = np.array([[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]], dtype="float32")
 
     M = cv2.getPerspectiveTransform(rect, dst)
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
@@ -52,10 +48,13 @@ def findLargestCountours(cntList, cntWidths):
 def convert_object(mask, image):
     gray = mask
     mask_ = np.zeros(mask.shape, dtype=np.uint8)
+
+    gray = gray.astype(np.uint8)
+    gray = cv2.cvtColor(gray, cv2.COLOR_RGB2GRAY)
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
     gray = cv2.medianBlur(gray, 5)
     # TODO THIS IS "FIXING" using CV_32S or CV_32F
-    gray = cv2.convertScaleAbs(gray, alpha=255/gray.max())
+    gray = cv2.convertScaleAbs(gray, alpha=255 / gray.max())
     countours, _ = cv2.findContours(gray, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
     for cnt in countours:
@@ -63,8 +62,7 @@ def convert_object(mask, image):
         convex_hull = cv2.convexHull(cnt)
         cv2.drawContours(mask_, [convex_hull], 0, (255), -1)
 
-    countours, _ = cv2.findContours(
-        mask_, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    countours, _ = cv2.findContours(mask_, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cnts = sorted(countours, key=cv2.contourArea, reverse=True)
     screenCntList = []
     scrWidths = []
@@ -80,7 +78,7 @@ def convert_object(mask, image):
             scrWidths.append(W)
 
     if len(scrWidths) == 0:
-        print('ID Card not found.')
+        print("ID Card not found.")
         pass
     else:
         screenCnt, scrWidth = findLargestCountours(screenCntList, scrWidths)

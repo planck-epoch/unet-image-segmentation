@@ -20,15 +20,16 @@ download_links_extra = [
 download_links = [
     # 'ftp://smartengines.com/midv-500/dataset/ina_id.zip',
     # 'ftp://smartengines.com/midv-500/dataset/ina_id_selfie.zip',
-    # 'ftp://smartengines.com/midv-500/dataset/04_aut_id.zip',
-    # 'ftp://smartengines.com/midv-500/dataset/14_deu_id_new.zip',
-    # 'ftp://smartengines.com/midv-500/dataset/15_deu_id_old.zip'
-    # 'ftp://smartengines.com/midv-500/dataset/06_bra_passport.zip',
-    # 'ftp://smartengines.com/midv-500/dataset/34_mda_passport.zip',
+    # "ftp://smartengines.com/midv-500/dataset/04_aut_id.zip",
+    # "ftp://smartengines.com/midv-500/dataset/06_bra_passport.zip",
+    # "ftp://smartengines.com/midv-500/dataset/20_esp_id_new.zip",
+    # "ftp://smartengines.com/midv-500/dataset/21_esp_id_old.zip",
+    # "ftp://smartengines.com/midv-500/dataset/24_fin_id.zip",
+    # "ftp://smartengines.com/midv-500/dataset/28_hun_passport.zip",
+    # "ftp://smartengines.com/midv-500/dataset/34_mda_passport.zip",
     "ftp://smartengines.com/midv-500/dataset/37_prt_id.zip",
-    # 'ftp://smartengines.com/midv-500/dataset/45_ukr_passport.zip',
-    # 'ftp://smartengines.com/midv-500/dataset/46_ury_passport.zip',
-    # 'ftp://smartengines.com/midv-500/dataset/50_xpo_id.zip'
+    # "ftp://smartengines.com/midv-500/dataset/45_ukr_passport.zip",
+    # "ftp://smartengines.com/midv-500/dataset/50_xpo_id.zip",
 ]
 
 """
@@ -309,7 +310,6 @@ def train_validation_split():
 
 def main():
     download_and_unzip()
-
     train_validation_split()
 
 

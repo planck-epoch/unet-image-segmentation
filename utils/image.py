@@ -49,8 +49,8 @@ def convert_object(mask, image):
     gray = mask
     mask_ = np.zeros(mask.shape, dtype=np.uint8)
 
-    gray = gray.astype(np.uint8)
-    gray = cv2.cvtColor(gray, cv2.COLOR_RGB2GRAY)
+    # gray = gray.astype(np.uint8)
+    # gray = cv2.cvtColor(gray, cv2.COLOR_RGB2GRAY)
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
     gray = cv2.medianBlur(gray, 5)
     # TODO THIS IS "FIXING" using CV_32S or CV_32F

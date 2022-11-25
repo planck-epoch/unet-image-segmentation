@@ -29,6 +29,14 @@ def load_image():
     img = img.reshape(1, 256, 256, 1)
     return img, height, width
 
+# def load_image():
+#     img = cv2.imread(INPUT_FILE, cv2.IMREAD_COLOR)
+#     img = img / 255.0
+#     height, width = img.shape[:2]
+#     img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
+#     img = img.reshape(1, 256, 256, 3)
+#     return img, height, width
+
 
 def predict_image(model, image):
     predict = model.predict(image, verbose=1)
@@ -55,12 +63,12 @@ def main():
 
             print("Cut it out...")
             mask_image = cv2.resize(output_image, (w, h))
-            # warped = image.convert_object(mask_image, cv2.imread(INPUT_FILE))
+            warped = image.convert_object(mask_image, cv2.imread(INPUT_FILE))
 
             print("Save output files...", OUTPUT_FILE)
             # plt.imsave("output_raw.png", output_image)
             plt.imsave(OUTPUT_MASK, mask_image, cmap="gray")
-            # plt.imsave(OUTPUT_FILE, warped)
+            plt.imsave(OUTPUT_FILE, warped)
             print("Done.")
 
 

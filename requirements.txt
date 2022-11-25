@@ -12,7 +12,7 @@ seaborn
 tqdm
 xgboost
 PyWavelets
-tensorflow-macos
-tensorflow-metal
+tensorflow
+tensorflow-gpu
 Keras
 h5py

@@ -2,6 +2,7 @@
 dataset/
 logs/
 model/
+outputs_model_metadata/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

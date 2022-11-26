@@ -56,7 +56,8 @@ def get_model(img_size, num_classes):
     # outputs = layers.Conv2D(num_classes, 3, activation="softmax", padding="same")(x)
     
     # outputsX = layers.Conv2D(2, 3, padding="same")(x)
-    outputs = layers.Conv2D(3, 3, activation="sigmoid", padding="same")(x)
+    # outputs = layers.Conv2D(3, 3, activation="sigmoid", padding="same")(x)
+    outputs = layers.Conv2D(num_classes, 3, activation="softmax", padding="same")(x)
 
     # Define the model
     model = keras.Model(inputs, outputs)

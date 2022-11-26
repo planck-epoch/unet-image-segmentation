@@ -73,13 +73,13 @@ _MODEL_INFO = {
         ModelSpecificInfo(
             name="U-NET image segmentation - ID Cards",
             version="v2",
-            image_width=257,
-            image_height=257,
+            image_width=256,
+            image_height=256,
             image_min=0,
-            image_max=255,
-            mean=[127.5],
-            std=[127.5],
-            num_classes=1,
+            image_max=1,
+            mean=[0.5],
+            std=[0.5],
+            num_classes=2,
             author="William Sousa")
 }
 

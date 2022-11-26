@@ -14,8 +14,6 @@ from keras.models import load_model
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
-import models
-
 from model_keras import get_model
 
 # from utils import metrics
@@ -24,8 +22,8 @@ from keras.metrics import MeanIoU
 NO_OF_TRAINING_IMAGES = len(os.listdir("dataset/train/train_frames/image"))
 NO_OF_VAL_IMAGES = len(os.listdir("dataset/train/val_frames/image"))
 
-NO_OF_EPOCHS = 30
-BATCH_SIZE = 2
+NO_OF_EPOCHS = 60
+BATCH_SIZE = 3
 
 NUM_CLASSES = 2
 IMAGE_SIZE = (256, 256)
@@ -47,7 +45,6 @@ def main():
     fix_gpu()
     gpus = tf.config.experimental.list_physical_devices('GPU')
     # tf.config.experimental.set_memory_growth(gpus[0], True)
-    
     print("GPUS: ", gpus)
 
     train_datagen = ImageDataGenerator(rescale=1.0 / 255)
@@ -64,7 +61,7 @@ def main():
         target_size=IMAGE_SIZE,
         class_mode=None,
         batch_size=BATCH_SIZE,
-        color_mode="rgb",
+        color_mode="grayscale",
         seed=SEED,
     )
 
@@ -82,7 +79,7 @@ def main():
         target_size=IMAGE_SIZE,
         class_mode=None,
         batch_size=BATCH_SIZE,
-        color_mode="rgb",
+        color_mode="grayscale",
         seed=SEED,
     )
 
@@ -102,14 +99,16 @@ def main():
     # load pretrained
     # model = load_model("model.h5", custom_objects={'mean_iou': metrics.mean_iou})
     #model.compile(optimizer=Adam(learning_rate=1e-5), loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=NUM_CLASSES)])
-    model.compile(optimizer="Adam", loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=NUM_CLASSES)])
+    # model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["categorical_accuracy"])
 
     # configure callbacks
-    checkpoint = ModelCheckpoint("./model/model.h5", verbose=1, save_best_only=False, save_weights_only=False, monitor="val_mean_io_u", mode="max")
-    earlystopping = EarlyStopping(patience=10, verbose=1, monitor="val_mean_io_u", mode="max")
-    reduce_lr = ReduceLROnPlateau(factor=0.2, patience=3, verbose=1, min_delta=0.000001, monitor="val_mean_io_u", mode="max")
-    tensorboard = TensorBoard(log_dir="./logs/" + time.strftime("%Y%m%d_%H%M%S"), histogram_freq=0, write_graph=True, write_images=True)
-
+    checkpoint = ModelCheckpoint("./model/model.h5", verbose=1, save_best_only=True, save_weights_only=False, monitor="val_categorical_accuracy", mode="max")
+    earlystopping = EarlyStopping(patience=10, verbose=1, monitor="val_categorical_accuracy", mode="max")
+    reduce_lr = ReduceLROnPlateau(factor=0.2, patience=3, verbose=1, min_delta=0.000001, monitor="val_categorical_accuracy", mode="max")
+    # tensorboard = TensorBoard(log_dir="./logs/" + time.strftime("%Y%m%d_%H%M%S"), histogram_freq=0, write_graph=True, write_images=True)
+    tensorboard = TensorBoard(log_dir="./logs/" + time.strftime("%Y%m%d"), histogram_freq=0, write_graph=True, write_images=True)
+    
     # train model
     model.fit(
         train_generator,

@@ -63,12 +63,13 @@ def main():
 
             print("Cut it out...")
             mask_image = cv2.resize(output_image, (w, h))
-            warped = image.convert_object(mask_image, cv2.imread(INPUT_FILE))
+            # warped = image.convert_object(mask_image, cv2.imread(INPUT_FILE))
 
             print("Save output files...", OUTPUT_FILE)
             # plt.imsave("output_raw.png", output_image)
-            plt.imsave(OUTPUT_MASK, mask_image, cmap="gray")
-            plt.imsave(OUTPUT_FILE, warped)
+            # plt.imsave(OUTPUT_MASK, mask_image, cmap="gray")
+            plt.imsave(OUTPUT_MASK, mask_image)
+            # plt.imsave(OUTPUT_FILE, warped)
             print("Done.")
 
 

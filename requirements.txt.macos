@@ -14,5 +14,6 @@ xgboost
 PyWavelets
 tensorflow-macos
 tensorflow-metal
+tflite-support
 Keras
 h5py

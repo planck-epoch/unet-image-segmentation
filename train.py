@@ -56,7 +56,7 @@ def main():
         target_size=IMAGE_SIZE,
         class_mode=None,
         batch_size=BATCH_SIZE,
-        color_mode="grayscale",
+        color_mode="rgb",
         seed=SEED,
     )
     train_mask_generator = train_datagen.flow_from_directory(
@@ -64,7 +64,7 @@ def main():
         target_size=IMAGE_SIZE,
         class_mode=None,
         batch_size=BATCH_SIZE,
-        color_mode="grayscale",
+        color_mode="rgb",
         seed=SEED,
     )
 
@@ -74,7 +74,7 @@ def main():
         target_size=IMAGE_SIZE,
         class_mode=None,
         batch_size=BATCH_SIZE,
-        color_mode="grayscale",
+        color_mode="rgb",
         seed=SEED,
     )
     val_mask_generator = val_datagen.flow_from_directory(
@@ -82,7 +82,7 @@ def main():
         target_size=IMAGE_SIZE,
         class_mode=None,
         batch_size=BATCH_SIZE,
-        color_mode="grayscale",
+        color_mode="rgb",
         seed=SEED,
     )
 
@@ -105,7 +105,7 @@ def main():
     model.compile(optimizer="Adam", loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=NUM_CLASSES)])
 
     # configure callbacks
-    checkpoint = ModelCheckpoint("model.h5", verbose=1, save_best_only=False, save_weights_only=False, monitor="val_mean_io_u", mode="max")
+    checkpoint = ModelCheckpoint("./model/model.h5", verbose=1, save_best_only=False, save_weights_only=False, monitor="val_mean_io_u", mode="max")
     earlystopping = EarlyStopping(patience=10, verbose=1, monitor="val_mean_io_u", mode="max")
     reduce_lr = ReduceLROnPlateau(factor=0.2, patience=3, verbose=1, min_delta=0.000001, monitor="val_mean_io_u", mode="max")
     tensorboard = TensorBoard(log_dir="./logs/" + time.strftime("%Y%m%d_%H%M%S"), histogram_freq=0, write_graph=True, write_images=True)
@@ -118,7 +118,7 @@ def main():
         validation_data=val_generator,
         validation_steps=(NO_OF_VAL_IMAGES // BATCH_SIZE),
         callbacks=[checkpoint, earlystopping, reduce_lr, tensorboard],
-        use_multiprocessing=True
+        use_multiprocessing=False
     )
 
 

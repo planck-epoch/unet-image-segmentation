@@ -47,14 +47,20 @@ def findLargestCountours(cntList, cntWidths):
 
 def convert_object(mask, image):
     gray = mask
-    mask_ = np.zeros(mask.shape, dtype=np.uint8)
-
-    # gray = gray.astype(np.uint8)
-    # gray = cv2.cvtColor(gray, cv2.COLOR_RGB2GRAY)
+    mask_shape = (mask.shape[0], mask.shape[1], 1)
+    mask_ = np.zeros(mask_shape, dtype=np.uint8)
+    
+    # cv2.imwrite('./bw_gray1.png', gray)
+    gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
+    
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
     gray = cv2.medianBlur(gray, 5)
+   
     # TODO THIS IS "FIXING" using CV_32S or CV_32F
     gray = cv2.convertScaleAbs(gray, alpha=255 / gray.max())
+    gray = gray.astype(np.uint8)
+    # cv2.imwrite('./bw_gray2.png', gray)
+    
     countours, _ = cv2.findContours(gray, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
     for cnt in countours:
@@ -86,4 +92,4 @@ def convert_object(mask, image):
         pts = screenCnt.reshape(4, 2)
         warped = four_point_transform(image, pts)
 
-        return warped
+        return cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)

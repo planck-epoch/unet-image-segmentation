@@ -9,9 +9,9 @@ from utils import image
 
 parser = argparse.ArgumentParser(description="Semantic segmentation of IDCard in Image.")
 parser.add_argument("input", type=str, help="Image (with IDCard) Input file")
-parser.add_argument("--output_mask", type=str, default="output_mask.png", help="Output file for mask")
-parser.add_argument("--output_prediction", type=str, default="output_pred.png", help="Output file for image")
-parser.add_argument("--model", type=str, default="model.h5", help="Path to .h5 model file")
+parser.add_argument("--output_mask", type=str, default="./model/output_mask.png", help="Output file for mask")
+parser.add_argument("--output_prediction", type=str, default="./model/output_pred.png", help="Output file for image")
+parser.add_argument("--model", type=str, default="./model/model.h5", help="Path to .h5 model file")
 
 args = parser.parse_args()
 
@@ -21,21 +21,21 @@ OUTPUT_FILE = args.output_prediction
 MODEL_FILE = args.model
 
 
-def load_image():
-    img = cv2.imread(INPUT_FILE, cv2.IMREAD_GRAYSCALE)
-    img = img / 255.0
-    height, width = img.shape[:2]
-    img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
-    img = img.reshape(1, 256, 256, 1)
-    return img, height, width
-
 # def load_image():
-#     img = cv2.imread(INPUT_FILE, cv2.IMREAD_COLOR)
+#     img = cv2.imread(INPUT_FILE, cv2.IMREAD_GRAYSCALE)
 #     img = img / 255.0
 #     height, width = img.shape[:2]
 #     img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
-#     img = img.reshape(1, 256, 256, 3)
+#     img = img.reshape(1, 256, 256, 1)
 #     return img, height, width
+
+def load_image():
+    img = cv2.imread(INPUT_FILE, cv2.IMREAD_COLOR)
+    img = img / 255.0
+    height, width = img.shape[:2]
+    img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
+    img = img.reshape(1, 256, 256, 3)
+    return img, height, width
 
 
 def predict_image(model, image):

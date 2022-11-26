@@ -14,5 +14,6 @@ xgboost
 PyWavelets
 tensorflow
 tensorflow-gpu
+tflite-support
 Keras
 h5py

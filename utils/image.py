@@ -52,14 +52,15 @@ def convert_object(mask, image):
     mask_ = np.zeros(mask_shape, dtype=np.uint8)
     
     cv2.imwrite('./model/bw_gray1.png', gray)
-    gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
+    #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
+    #gray = cv2.cvtColor(gray, cv2.COLOR_BGRA2GRAY)
     
-    gray = cv2.bilateralFilter(gray, 11, 17, 17)
-    gray = cv2.medianBlur(gray, 5)
+    #gray = cv2.bilateralFilter(gray, 11, 17, 17)
+    #gray = cv2.medianBlur(gray, 5)
    
     # TODO THIS IS "FIXING" using CV_32S or CV_32F
     gray = cv2.convertScaleAbs(gray, alpha=255 / gray.max())
-    gray = gray.astype(np.uint8)
+    # gray = gray.astype(np.uint8)
     cv2.imwrite('./model/bw_gray2.png', gray)
     
     countours, _ = cv2.findContours(gray, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)

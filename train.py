@@ -100,12 +100,14 @@ def main():
     # model = load_model("model.h5", custom_objects={'mean_iou': metrics.mean_iou})
     #model.compile(optimizer=Adam(learning_rate=1e-5), loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=NUM_CLASSES)])
     # model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
-    model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["categorical_accuracy"])
-
+    # model.compile(optimizer="Adam", loss="binary_crossentropy", metrics=["categorical_accuracy"])
+    model.compile(optimizer="Adam", loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=2)])
+    
     # configure callbacks
-    checkpoint = ModelCheckpoint("./model/model.h5", verbose=1, save_best_only=True, save_weights_only=False, monitor="val_categorical_accuracy", mode="max")
-    earlystopping = EarlyStopping(patience=10, verbose=1, monitor="val_categorical_accuracy", mode="max")
-    reduce_lr = ReduceLROnPlateau(factor=0.2, patience=3, verbose=1, min_delta=0.000001, monitor="val_categorical_accuracy", mode="max")
+    checkpoint = ModelCheckpoint("./model/model.h5", verbose=1, save_best_only=True, save_weights_only=False, monitor="val_mean_io_u", mode="max")
+    earlystopping = EarlyStopping(patience=10, verbose=1, monitor="val_mean_io_u", mode="max")
+    reduce_lr = ReduceLROnPlateau(factor=0.2, patience=3, verbose=1, min_delta=0.000001, monitor="val_mean_io_u", mode="max")
+    
     # tensorboard = TensorBoard(log_dir="./logs/" + time.strftime("%Y%m%d_%H%M%S"), histogram_freq=0, write_graph=True, write_images=True)
     tensorboard = TensorBoard(log_dir="./logs/" + time.strftime("%Y%m%d"), histogram_freq=0, write_graph=True, write_images=True)
     

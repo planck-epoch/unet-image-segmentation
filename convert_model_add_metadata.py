@@ -72,14 +72,14 @@ _MODEL_INFO = {
     "model.tflite":
         ModelSpecificInfo(
             name="U-NET image segmentation - ID Cards",
-            version="v2",
+            version="v0",
             image_width=256,
             image_height=256,
             image_min=0,
-            image_max=1,
-            mean=[0.5],
-            std=[0.5],
-            num_classes=2,
+            image_max=255,
+            mean=[127.5],
+            std=[127.5],
+            num_classes=1,
             author="William Sousa")
 }
 

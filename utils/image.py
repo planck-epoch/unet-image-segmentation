@@ -55,8 +55,8 @@ def convert_object(mask, image):
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGRA2GRAY)
     
-    #gray = cv2.bilateralFilter(gray, 11, 17, 17)
-    #gray = cv2.medianBlur(gray, 5)
+    gray = cv2.bilateralFilter(gray, 11, 17, 17)
+    gray = cv2.medianBlur(gray, 5)
    
     # TODO THIS IS "FIXING" using CV_32S or CV_32F
     gray = cv2.convertScaleAbs(gray, alpha=255 / gray.max())

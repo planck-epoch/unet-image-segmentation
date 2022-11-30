@@ -93,5 +93,8 @@ def convert_object(mask, image):
 
         pts = screenCnt.reshape(4, 2)
         warped = four_point_transform(image, pts)
+        # -1 signifies drawing all contours
+        cv2.drawContours(image, cnts, -1, (0, 255, 0), 3)
+        cv2.imwrite('./model/bw_contours.png', image)
 
         return cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)

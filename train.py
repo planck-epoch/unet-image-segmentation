@@ -22,7 +22,7 @@ from keras.metrics import MeanIoU
 NO_OF_TRAINING_IMAGES = len(os.listdir("dataset/train/train_frames/image"))
 NO_OF_VAL_IMAGES = len(os.listdir("dataset/train/val_frames/image"))
 
-NO_OF_EPOCHS = 60
+NO_OF_EPOCHS = 120
 BATCH_SIZE = 3
 
 NUM_CLASSES = 2
@@ -53,7 +53,7 @@ def main():
         target_size=IMAGE_SIZE,
         class_mode=None,
         batch_size=BATCH_SIZE,
-        color_mode="rgb",
+        color_mode="grayscale",
         seed=SEED,
     )
     train_mask_generator = train_datagen.flow_from_directory(
@@ -71,7 +71,7 @@ def main():
         target_size=IMAGE_SIZE,
         class_mode=None,
         batch_size=BATCH_SIZE,
-        color_mode="rgb",
+        color_mode="grayscale",
         seed=SEED,
     )
     val_mask_generator = val_datagen.flow_from_directory(
@@ -101,7 +101,7 @@ def main():
     #model.compile(optimizer=Adam(learning_rate=1e-5), loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=NUM_CLASSES)])
     # model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     # model.compile(optimizer="Adam", loss="binary_crossentropy", metrics=["categorical_accuracy"])
-    model.compile(optimizer="Adam", loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=2)])
+    model.compile(optimizer="NAdam", loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=2)])
     
     # configure callbacks
     checkpoint = ModelCheckpoint("./model/model.h5", verbose=1, save_best_only=True, save_weights_only=False, monitor="val_mean_io_u", mode="max")

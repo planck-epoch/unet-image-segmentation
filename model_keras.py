@@ -3,7 +3,7 @@ import keras as keras
 
 
 def get_model(img_size, num_classes):
-    inputs = keras.Input(shape=img_size + (3,))
+    inputs = keras.Input(shape=img_size + (1,))
 
     ### [First half of the network: downsampling inputs] ###
 

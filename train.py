@@ -17,10 +17,10 @@ from tensorflow.compat.v1 import InteractiveSession
 from model_keras import get_model
 
 # from utils import metrics
-from keras.metrics import MeanIoU
+from keras.metrics import MeanIoU, IoU, OneHotMeanIoU, OneHotIoU
 
-NO_OF_TRAINING_IMAGES = len(os.listdir("dataset/train/train_frames/image"))
-NO_OF_VAL_IMAGES = len(os.listdir("dataset/train/val_frames/image"))
+NO_OF_TRAINING_IMAGES = len(os.listdir("dataset/train/train_frames/card"))
+NO_OF_VAL_IMAGES = len(os.listdir("dataset/train/val_frames/card"))
 
 NO_OF_EPOCHS = 120
 BATCH_SIZE = 3
@@ -51,6 +51,7 @@ def main():
     train_image_generator = train_datagen.flow_from_directory(
         "./dataset/train/train_frames",
         target_size=IMAGE_SIZE,
+        classes=["card"],
         class_mode=None,
         batch_size=BATCH_SIZE,
         color_mode="grayscale",
@@ -59,7 +60,8 @@ def main():
     train_mask_generator = train_datagen.flow_from_directory(
         "dataset/train/train_masks",
         target_size=IMAGE_SIZE,
-        class_mode=None,
+        classes=["card"],
+        class_mode="categorical",
         batch_size=BATCH_SIZE,
         color_mode="grayscale",
         seed=SEED,
@@ -69,6 +71,7 @@ def main():
     val_image_generator = val_datagen.flow_from_directory(
         "dataset/train/val_frames",
         target_size=IMAGE_SIZE,
+        classes=["card"],
         class_mode=None,
         batch_size=BATCH_SIZE,
         color_mode="grayscale",
@@ -77,7 +80,8 @@ def main():
     val_mask_generator = val_datagen.flow_from_directory(
         "dataset/train/val_masks",
         target_size=IMAGE_SIZE,
-        class_mode=None,
+        classes=["card"],
+        class_mode="categorical",
         batch_size=BATCH_SIZE,
         color_mode="grayscale",
         seed=SEED,
@@ -89,6 +93,13 @@ def main():
     # build model
     # model = models.U_NET(input_size=(256, 256, 1))
    
+    print("indices")
+    print(train_mask_generator.class_indices)
+    for batch_tuple in train_generator:
+        print(batch_tuple)
+        print(batch_tuple[1][0],batch_tuple[1][0].shape)
+        break
+
 
     # Build model
     model = get_model(IMAGE_SIZE, NUM_CLASSES)
@@ -98,15 +109,20 @@ def main():
 
     # load pretrained
     # model = load_model("model.h5", custom_objects={'mean_iou': metrics.mean_iou})
-    #model.compile(optimizer=Adam(learning_rate=1e-5), loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=NUM_CLASSES)])
-    # model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
-    # model.compile(optimizer="Adam", loss="binary_crossentropy", metrics=["categorical_accuracy"])
-    model.compile(optimizer="NAdam", loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=2)])
+    # model.compile(optimizer=Adam(learning_rate=1e-5), loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=NUM_CLASSES)])
+    # model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["categorical_accuracy", OneHotMeanIoU(num_classes=2)])
+    # model.compile(optimizer="NAdam", loss="binary_crossentropy", metrics=["accuracy"])
+    # model.compile(optimizer="Adam", loss="binary_crossentropy", metrics=["accuracy", MeanIoU(num_classes=2)])
     
+    # model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["categorical_accuracy", OneHotMeanIoU(num_classes=NUM_CLASSES)])
+    # model.compile(optimizer="Adam", loss=["binary_crossentropy", "poisson"], metrics=["categorical_accuracy", OneHotMeanIoU(num_classes=NUM_CLASSES)])
+    
+    # model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["sparse_categorical_accuracy", OneHotIoU(num_classes=2, target_class_ids=[0])])
+    model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["sparse_categorical_accuracy", OneHotMeanIoU(num_classes=2, ignore_class = [1], sparse_y_pred=True)])
     # configure callbacks
-    checkpoint = ModelCheckpoint("./model/model.h5", verbose=1, save_best_only=True, save_weights_only=False, monitor="val_mean_io_u", mode="max")
-    earlystopping = EarlyStopping(patience=10, verbose=1, monitor="val_mean_io_u", mode="max")
-    reduce_lr = ReduceLROnPlateau(factor=0.2, patience=3, verbose=1, min_delta=0.000001, monitor="val_mean_io_u", mode="max")
+    checkpoint = ModelCheckpoint("./model/model.h5", verbose=1, save_best_only=True, save_weights_only=False, monitor="val_one_hot_mean_io_u", mode="max")
+    earlystopping = EarlyStopping(patience=10, verbose=1, monitor="val_one_hot_mean_io_u", mode="max")
+    reduce_lr = ReduceLROnPlateau(factor=0.2, patience=3, verbose=1, min_delta=0.000001, monitor="val_one_hot_mean_io_u", mode="max")
     
     # tensorboard = TensorBoard(log_dir="./logs/" + time.strftime("%Y%m%d_%H%M%S"), histogram_freq=0, write_graph=True, write_images=True)
     tensorboard = TensorBoard(log_dir="./logs/" + time.strftime("%Y%m%d"), histogram_freq=0, write_graph=True, write_images=True)
@@ -119,7 +135,8 @@ def main():
         validation_data=val_generator,
         validation_steps=(NO_OF_VAL_IMAGES // BATCH_SIZE),
         callbacks=[checkpoint, earlystopping, reduce_lr, tensorboard],
-        use_multiprocessing=False
+        use_multiprocessing=False,
+        verbose=1
     )
 
 

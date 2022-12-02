@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 from keras.models import load_model
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 from utils import image
 
@@ -38,7 +39,7 @@ def load_image():
 #     return img, height, width
 
 # def load_image():
-#     img = cv2.imread(INPUT_FILE, cv2.IMREAD_UNCHANGED)
+#     img = cv2.imread(INPUT_FILE, cv2.IMREAD_ANYCOLOR)
 #     img = img / 255.0
 #     height, width = img.shape[:2]
 #     img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
@@ -76,8 +77,8 @@ def main():
 
             print("Save output files...", OUTPUT_FILE)
             # plt.imsave("output_raw.png", output_image)
-            plt.imsave(OUTPUT_MASK, mask_image, cmap="gray")
-            # plt.imsave(OUTPUT_MASK, mask_image)
+            #plt.imsave(OUTPUT_MASK, mask_image, cmap="gray")
+            #plt.imsave(OUTPUT_MASK, mask_image)
             plt.imsave(OUTPUT_FILE, warped)
             print("Done.")
 

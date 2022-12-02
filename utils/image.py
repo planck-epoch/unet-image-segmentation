@@ -51,6 +51,8 @@ def convert_object(mask, image):
     # mask_shape = mask.shape
     mask_ = np.zeros(mask_shape, dtype=np.uint8)
     
+    gray = onehot_to_grayscale(gray)
+    gray = gray.astype(np.uint8)
     cv2.imwrite('./model/bw_gray1.png', gray)
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGRA2GRAY)
@@ -98,3 +100,39 @@ def convert_object(mask, image):
         cv2.imwrite('./model/bw_contours.png', image)
 
         return cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)
+    
+# https://stackoverflow.com/questions/43884463/how-to-convert-rgb-image-to-one-hot-encoded-3d-array-based-on-color-using-numpy
+# color_dict = {0: (0,   255, 255),
+#               1: (255, 255,   0),
+#               ....}
+
+
+# def rgb_to_onehot(rgb_arr, color_dict):
+#     num_classes = len(color_dict)
+#     shape = rgb_arr.shape[:2]+(num_classes,)
+#     arr = np.zeros( shape, dtype=np.int8 )
+#     for i, cls in enumerate(color_dict):
+#         arr[:,:,i] = np.all(rgb_arr.reshape( (-1,3) ) == color_dict[i], axis=1).reshape(shape[:2])
+#     return arr
+
+
+# def onehot_to_rgb(onehot, color_dict):
+#     single_layer = np.argmax(onehot, axis=-1)
+#     output = np.zeros( onehot.shape[:2]+(3,) )
+#     for k in color_dict.keys():
+#         output[single_layer==k] = color_dict[k]
+#     return np.uint8(output)
+
+ 
+def onehot_to_grayscale(onehot):
+    # print(onehot.shape)
+    # print(onehot[0][0][0])
+    # print(onehot[0][0][1])
+    # print(np.argmax(onehot[0][0]))
+    output = np.zeros(onehot.shape[:2]+(1,) )
+    # print(output.shape)
+    for i in range(output.shape[0]):
+        for j in range(output.shape[1]):
+            output[i][j] = np.argmax(onehot[i][j]) * 255
+        
+    return output

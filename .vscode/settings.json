@@ -1,5 +1,8 @@
 {
-  "python.formatting.provider": "black",
-  "python.formatting.blackArgs": ["--line-length", "140"],
-  "python.linting.enabled": true
+  // "python.formatting.provider": "autopep8",
+  // "python.formatting.blackArgs": ["--line-length", "240"],
+  "python.linting.enabled": true,
+  "python.formatting.autopep8Args": ["--max-line-length", "120", "--experimental"],
+  "python.formatting.yapfArgs": ["--style", "{based_on_style: chromium, indent_width: 2}"],
+  "python.formatting.blackArgs": ["--line-length", "240"]
 }

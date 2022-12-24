@@ -2,7 +2,7 @@ from keras import backend as K
 from utils import metrics
 
 def dice_coef_loss(y_true, y_pred):
-    return 1 - dice_coef(y_true, y_pred)
+    return 1 - metrics.dice_coef(y_true, y_pred)
 
 def iou_loss(true, pred):
     intersection = true * pred

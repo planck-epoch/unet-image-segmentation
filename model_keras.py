@@ -1,9 +1,9 @@
 from tensorflow.keras import layers
-import keras as keras
+from tensorflow import keras
 
 
 def get_model(img_size, num_classes):
-    inputs = keras.Input(shape=img_size + (1,))
+    inputs = keras.Input(shape=img_size + (3,))
 
     ### [First half of the network: downsampling inputs] ###
 
@@ -54,13 +54,13 @@ def get_model(img_size, num_classes):
 
     # Add a per-pixel classification layer
     # outputs = layers.Conv2D(num_classes, 3, activation="softmax", padding="same")(x)
-    
+
     # outputsX = layers.Conv2D(2, 3, padding="same")(x)
     # outputs = layers.Conv2D(3, 3, activation="sigmoid", padding="same")(x)
     # x = layers.Conv2D(4, 3, activation="sigmoid", padding="same")(x)
 
-    outputs = layers.Conv2D(2, 3, activation="softmax", padding="same")(x)
-    # outputs = layers.Conv2D(1, 3, activation="sigmoid", padding="same")(x)
+    #outputs = layers.Conv2D(2, 1, activation="softmax", padding="same")(x)
+    outputs = layers.Conv2D(1, 3, activation="sigmoid", padding="same")(x)
 
     # Define the model
     model = keras.Model(inputs, outputs)

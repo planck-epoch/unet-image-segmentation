@@ -4,6 +4,9 @@ import cv2
 import numpy as np
 
 
+CONTOUR_MIN_THRESHOLD = 100
+
+
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
 
@@ -37,9 +40,6 @@ def four_point_transform(image, pts):
 
 
 def findLargestCountours(cntList, cntWidths):
-    newCntList = []
-    newCntWidths = []
-
     first_largest_cnt_pos = cntWidths.index(max(cntWidths))
 
     return cntList[first_largest_cnt_pos], cntWidths[first_largest_cnt_pos]
@@ -50,21 +50,24 @@ def convert_object(mask, image):
     mask_shape = (mask.shape[0], mask.shape[1], 1)
     # mask_shape = mask.shape
     mask_ = np.zeros(mask_shape, dtype=np.uint8)
-    
-    gray = onehot_to_grayscale(gray)
-    gray = gray.astype(np.uint8)
+
+    #gray = onehot_to_grayscale(gray)
+    #gray = gray.astype(np.uint8)
+
     cv2.imwrite('./model/bw_gray1.png', gray)
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
     #gray = cv2.cvtColor(gray, cv2.COLOR_BGRA2GRAY)
-    
+
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
     gray = cv2.medianBlur(gray, 5)
-   
+
+    gray = remove_noise(gray)
+
     # TODO THIS IS "FIXING" using CV_32S or CV_32F
     gray = cv2.convertScaleAbs(gray, alpha=255 / gray.max())
-    # gray = gray.astype(np.uint8)
+    gray = gray.astype(np.uint8)
     cv2.imwrite('./model/bw_gray2.png', gray)
-    
+
     countours, _ = cv2.findContours(gray, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
     for cnt in countours:
@@ -82,7 +85,7 @@ def convert_object(mask, image):
         peri = cv2.arcLength(convex_hull, True)
         approx = cv2.approxPolyDP(convex_hull, 0.02 * peri, True)
         screenCnt = approx
-        if (len(screenCnt) == 4) & (cv2.contourArea(screenCnt) > 100):
+        if (len(screenCnt) == 4) & (cv2.contourArea(screenCnt) > CONTOUR_MIN_THRESHOLD):
             (X, Y, W, H) = cv2.boundingRect(screenCnt)
             screenCntList.append(screenCnt)
             scrWidths.append(W)
@@ -100,7 +103,7 @@ def convert_object(mask, image):
         cv2.imwrite('./model/bw_contours.png', image)
 
         return cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)
-    
+
 # https://stackoverflow.com/questions/43884463/how-to-convert-rgb-image-to-one-hot-encoded-3d-array-based-on-color-using-numpy
 # color_dict = {0: (0,   255, 255),
 #               1: (255, 255,   0),
@@ -123,16 +126,26 @@ def convert_object(mask, image):
 #         output[single_layer==k] = color_dict[k]
 #     return np.uint8(output)
 
- 
+
 def onehot_to_grayscale(onehot):
     # print(onehot.shape)
     # print(onehot[0][0][0])
     # print(onehot[0][0][1])
     # print(np.argmax(onehot[0][0]))
-    output = np.zeros(onehot.shape[:2]+(1,) )
+    output = np.zeros(onehot.shape[:2]+(1,))
     # print(output.shape)
     for i in range(output.shape[0]):
         for j in range(output.shape[1]):
-            output[i][j] = np.argmax(onehot[i][j]) * 255
-        
+            output[i][j] = 255 * onehot[i][j][0] if np.argmax(onehot[i][j]) == 0 else 0
+
+    return output
+
+
+def remove_noise(grayimage):
+    shape = grayimage.shape
+    print("SHAPE SHAPE =>", shape)
+    output = np.zeros(grayimage.shape[:2]+(1,))
+    for i in range(grayimage.shape[0]):
+        for j in range(grayimage.shape[1]):
+            output[i][j] = grayimage[i][j] if grayimage[i][j] > 0.5 else 0
     return output

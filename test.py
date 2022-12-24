@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 from keras.models import load_model
 import tensorflow as tf
-import tensorflow_probability as tfp
+# import tensorflow_probability as tfp
 
 from utils import image
 
@@ -22,21 +22,21 @@ OUTPUT_FILE = args.output_prediction
 MODEL_FILE = args.model
 
 
-def load_image():
-    img = cv2.imread(INPUT_FILE, cv2.IMREAD_GRAYSCALE)
-    img = img / 255.0
-    height, width = img.shape[:2]
-    img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
-    img = img.reshape(1, 256, 256, 1)
-    return img, height, width
-
 # def load_image():
-#     img = cv2.imread(INPUT_FILE, cv2.IMREAD_COLOR)
+#     img = cv2.imread(INPUT_FILE, cv2.IMREAD_GRAYSCALE)
 #     img = img / 255.0
 #     height, width = img.shape[:2]
 #     img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
-#     img = img.reshape(1, 256, 256, 3)
+#     img = img.reshape(1, 256, 256, 1)
 #     return img, height, width
+
+def load_image():
+    img = cv2.imread(INPUT_FILE, cv2.IMREAD_COLOR)
+    img = img / 255.0
+    height, width = img.shape[:2]
+    img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
+    img = img.reshape(1, 256, 256, 3)
+    return img, height, width
 
 # def load_image():
 #     img = cv2.imread(INPUT_FILE, cv2.IMREAD_ANYCOLOR)
@@ -45,7 +45,6 @@ def load_image():
 #     img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
 #     img = img.reshape(1, 256, 256, 4)
 #     return img, height, width
-
 
 
 def predict_image(model, image):
@@ -73,7 +72,7 @@ def main():
 
             print("Cut it out...")
             mask_image = cv2.resize(output_image, (w, h))
-            warped = image.convert_object(mask_image, cv2.imread(INPUT_FILE))
+            warped = image.convert_object(mask_image, cv2.imread(INPUT_FILE, cv2.IMREAD_COLOR))
 
             print("Save output files...", OUTPUT_FILE)
             # plt.imsave("output_raw.png", output_image)

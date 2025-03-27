@@ -3,6 +3,7 @@
 train.py
 --------
 Script to train a U-Net model for image segmentation using Keras / TensorFlow.
+
 It expects:
   - Color images in train_frames/image (3 channels, color_mode="rgb")
   - Single-channel (grayscale) masks in train_masks/image (1 channel, color_mode="grayscale")
@@ -17,14 +18,16 @@ Folder structure assumption:
 Requirements:
   - Keras / TensorFlow
   - GPU recommended (though not required)
-  - A U-Net definition that outputs (H,W,1) for binary segmentation
+  - A U-Net definition that outputs (H, W, 1) for binary segmentation.
+
 Usage:
-  $ python scripts/train.py \
+  python scripts/train.py \
     --epochs 50 \
     --batch-size 8 \
     --learning-rate 1e-4 \
     --model-out ./models/unet_model.h5
 """
+
 import os
 import random as rn
 import time
@@ -41,9 +44,10 @@ from keras.metrics import MeanIoU
 from keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-from model.u_net import U_NET  # or wherever your U-Net definition resides
+# Import your updated model from model/u_net.py
+from model.u_net import U_NET
 
-# Default hyperparams (can be overridden via command-line)
+# Default hyperparams (overridden via command-line)
 DEFAULT_EPOCHS    = 30
 DEFAULT_BATCHSIZE = 2
 DEFAULT_LR        = 1e-3
@@ -56,15 +60,18 @@ np.random.seed(SEED)
 tf.random.set_seed(SEED)
 
 # Directory assumptions
-TRAIN_FRAMES_DIR = "dataset/train/train_frames/image"      # color images
-TRAIN_MASKS_DIR  = "dataset/train/train_masks/image"       # grayscale masks
+TRAIN_FRAMES_DIR = "dataset/train/train_frames/image"   # color images
+TRAIN_MASKS_DIR  = "dataset/train/train_masks/image"    # grayscale masks
 VAL_FRAMES_DIR   = "dataset/train/val_frames/image"
 VAL_MASKS_DIR    = "dataset/train/val_masks/image"
 
 IMAGE_SIZE       = (256, 256)
-NUM_CLASSES      = 2
+NUM_CLASSES      = 1  # Single-channel output for binary segmentation
 
 def parse_args():
+    """
+    Parse command-line arguments for training configuration.
+    """
     parser = argparse.ArgumentParser(
         description="Train a U-Net model for binary segmentation."
     )
@@ -95,7 +102,7 @@ def parse_args():
     return parser.parse_args()
 
 def fix_gpu():
-    """Optional GPU config: enable memory growth if GPU is available."""
+    """Optional GPU config to enable memory growth if GPU is available."""
     try:
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
@@ -109,8 +116,8 @@ def combine_generators(image_gen, mask_gen):
     Assumes both 'flow_from_directory' calls produce matching batch sizes.
     """
     while True:
-        x_batch = next(image_gen)  # shape (batch, 256, 256, 3)
-        y_batch = next(mask_gen)   # shape (batch, 256, 256, 1)
+        x_batch = next(image_gen)  # (batch, 256,256,3)
+        y_batch = next(mask_gen)   # (batch, 256,256,1)
         yield (x_batch, y_batch)
 
 def main():
@@ -123,10 +130,10 @@ def main():
 
     fix_gpu()
 
-    print(f"Starting training with epochs={EPOCHS}, batch_size={BATCH_SIZE}, learning_rate={LR}")
+    print(f"Starting training with: epochs={EPOCHS}, batch_size={BATCH_SIZE}, learning_rate={LR}")
     print(f"Model output file: {MODEL_OUT}")
 
-    # Data augmentation & rescaling
+    # Rescaling / augmentation
     train_img_datagen  = ImageDataGenerator(rescale=1.0/255.0)
     train_mask_datagen = ImageDataGenerator(rescale=1.0/255.0)
     val_img_datagen    = ImageDataGenerator(rescale=1.0/255.0)
@@ -176,12 +183,12 @@ def main():
     train_generator = combine_generators(train_image_generator, train_mask_generator)
     val_generator   = combine_generators(val_image_generator, val_mask_generator)
 
-    # Build U-Net: input=(256,256,3), output=(256,256,1)
-    model = U_NET((IMAGE_SIZE[0], IMAGE_SIZE[1], 3))
+    # Build U-Net: input=(256,256,3), output=(256,256,1) for binary segmentation
+    model = U_NET(img_size=IMAGE_SIZE, num_classes=NUM_CLASSES)
     model.compile(
         optimizer=Adam(learning_rate=LR),
         loss="binary_crossentropy",
-        metrics=["accuracy", MeanIoU(num_classes=NUM_CLASSES)]
+        metrics=["accuracy", MeanIoU(num_classes=2)]  # or num_classes=NUM_CLASSES
     )
     model.summary()
 

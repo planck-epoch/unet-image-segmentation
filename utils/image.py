@@ -51,7 +51,12 @@ def convert_object(mask, image):
     mask_ = np.zeros(mask_shape, dtype=np.uint8)
     
     # cv2.imwrite('./bw_gray1.png', gray)
-    gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
+    #gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
+    if len(mask.shape) == 3 and mask.shape[2] == 3:
+        gray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = mask
+
     
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
     gray = cv2.medianBlur(gray, 5)

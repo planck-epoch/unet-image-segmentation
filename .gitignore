@@ -1,8 +1,7 @@
 # Project
 dataset/
 logs/
-model/
-model.h5
+models/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,30 +1,58 @@
-from keras import backend as K
-from utils import metrics
+import tensorflow as tf
+from tensorflow.keras import backend as K # Keras backend can still be useful
+from typing import Callable # For type hinting functions if needed
 
-def dice_coef_loss(y_true, y_pred):
-    return 1 - dice_coef(y_true, y_pred)
+from .metrics import dice_coef
 
-def iou_loss(true, pred):
-    intersection = true * pred
-    notTrue = 1 - true
-    union = true + (notTrue * pred)
-    return K.sum(intersection)/K.sum(union)
+# small epsilon value for smoothing to avoid division by zero
+SMOOTH = K.epsilon()
 
-def jaccard_distance_loss(y_true, y_pred, smooth=100):
+
+def dice_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     """
-    Jaccard = (|X & Y|)/ (|X|+ |Y| - |X & Y|)
-            = sum(|A*B|)/(sum(|A|)+sum(|B|)-sum(|A*B|))
+    Computes the Dice loss (1 - Dice coefficient).
 
-    The jaccard distance loss is usefull for unbalanced datasets. This has been
-    shifted so it converges on 0 and is smoothed to avoid exploding or disapearing
-    gradient.
+    Relies on a `dice_coef` function (imported from .metrics) which should ideally
+    handle its own smoothing and axis summation appropriately for the task.
 
-    Ref: https://en.wikipedia.org/wiki/Jaccard_index
+    Args:
+        y_true (tf.Tensor): Ground truth tensor (e.g., shape = (batch, H, W, C)).
+                            Values typically binary {0, 1} or probabilities [0, 1].
+        y_pred (tf.Tensor): Predicted tensor (e.g., shape = (batch, H, W, C)).
+                            Values typically probabilities [0, 1].
 
-    @url: https://gist.github.com/wassname/f1452b748efcbeb4cb9b1d059dce6f96
-    @author: wassname
+    Returns:
+        tf.Tensor: The calculated Dice loss (scalar).
     """
-    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
-    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
-    jac = (intersection + smooth) / (sum_ - intersection + smooth)
-    return (1 - jac) * smooth
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+
+    # Calculate Dice coefficient using the imported function
+    # Ensure dice_coef handles reduction correctly (e.g., returns mean over batch)
+    dice_coefficient = dice_coef(y_true, y_pred) # Assumes it uses appropriate smoothing
+
+    # Dice loss is 1 minus the coefficient
+    loss = 1.0 - dice_coefficient
+    return loss
+
+def iou_loss(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> tf.Tensor:
+    """
+    Computes the IoU loss (1 - IoU coefficient), also known as Jaccard loss.
+
+    Args:
+        y_true (tf.Tensor): Ground truth tensor (e.g., shape = (batch, H, W, C)).
+        y_pred (tf.Tensor): Predicted tensor (e.g., shape = (batch, H, W, C)).
+        smooth (float): Smoothing factor passed to `iou_coef`.
+
+    Returns:
+        tf.Tensor: The calculated IoU loss (scalar).
+    """
+    # Calculate IoU coefficient
+    iou_coefficient = iou_coef(y_true, y_pred, smooth=smooth)
+
+    # IoU loss is 1 minus the coefficient
+    loss = 1.0 - iou_coefficient
+    return loss
+
+# Alias for Jaccard Loss
+jaccard_loss = iou_loss

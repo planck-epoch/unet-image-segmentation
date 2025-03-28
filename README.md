@@ -1,4 +1,4 @@
-# U-Net Semantic Segmentation
+# U-Net Semantic Segmentation (TensorFlow)
 
 ```bash
 ██╗   ██╗      ███╗   ██╗███████╗████████╗
@@ -9,22 +9,14 @@
  ╚═════╝       ╚═╝  ╚═══╝╚══════╝   ╚═╝   
 ```
 
-**A general U-Net pipeline for semantic segmentation, originally used for ID card segmentation but easily adapted to any segmentation task.**
-
-This repository includes:
-- A labeling application (Jupyter notebook) to annotate images.
-- Data preprocessing scripts.
-- U-Net training and inference scripts.
-- Evaluation and benchmarking utilities.
-
----
-
 ## Table of Contents
 1.  [Overview](#overview)
 2.  [Features](#features)
 3.  [Architecture](#model-architecture)
 4.  [Installation](#installation)
-5.  [Getting Started](#getting-started)
+5.  [Data Preparation](#data-preparation)
+    - [Using MIDV Data](#using-midv-id-card-data)
+    - [Using Your Own Dataset](#using-your-own-dataset)
 6.  [Training](#training)
 7.  [Inference](#inference)
 8.  [Benchmarking](#benchmarking)
@@ -32,77 +24,147 @@ This repository includes:
 10. [License](#license)
 11. [References](#references)
 
----
 
 ## Overview
 
-This project implements a U-Net model for semantic segmentation. While originally developed for **ID card segmentation**, it can be adapted to any dataset requiring pixel-level labeling. The repository also provides:
-- Scripts to **prepare** and **split** data into train/validation sets.
-- Example model weights and instructions to run inference and measure performance.
+Welcome to this one-stop shop for `U-Net` semantic segmentation with `TensorFlow` and `Keras`. 
 
-If you are new to semantic segmentation, you might want to check out [Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597)  for more details on the architecture.
+This project implements a robust pipeline inspired by the original U-Net ([Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597)) capable of separating foreground objects from the background pixel by pixel. 
 
-## Features
+The primary application driving its development was the segmentation of identity documents (like `ID cards`) for downstream processing such as OCR and data validation (e.g., with [Regula SDK](https://regulaforensics.com/id-verification)). 
 
-- **Labeling Notebook**: Easily draw polygon or bounding-box annotations.  
-- **Flexible Data Preprocessing**: Customize how images and masks are preprocessed.  
-- **U-Net Architecture**: Standard or extended U-Net with additional layers or custom losses.  
-- **Metrics**: Includes IoU, Dice, Precision/Recall, etc.  
-- **Benchmarking Script**: Evaluate segmentation performance at specified thresholds.  
+However, the flexible design allows easy adaptation for diverse segmentation tasks across different domains (medical, satellite, etc.). Please consider this repository a strong starting point and learning tool; although based on production-proven concepts, it is not provided as a finalized, production-ready application.
 
 
+## Fetures
 
-## **Model Architecture**
+### Data Management:
 
+- `scripts/download_dataset.py`: Automatically download and extract standard datasets like [MIDV-500](https://arxiv.org/abs/1807.05786)/[MIDV-2019](https://arxiv.org/abs/1910.04009)
 
-We use a classic U-Net structure (see [Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597)).
-The model has an encoder-decoder architecture with skip connections:
-- Encoder downsamples the input image to extract features.
-- Decoder upsamples the feature maps to produce the segmentation mask.
-- Skip connections merge low-level features with higher-level ones for more precise segmentations.
+- `scripts/prepare_dataset.py`: Splits raw labeled data (`images` + `masks`) into `train`/`validation` sets formatted for Keras `ImageDataGenerator`.
 
-### Binary Segmentation
+### U-Net Model (`model/u_net.py`):
 
-Here, we’re doing a binary segmentation approach (masks are black/white representing a single foreground class vs. background). If you need multiple classes, you can modify the final layer to have `Conv2D(#classes, 1, activation='softmax')` adjust your masks accordingly, and update the loss/metrics. Our use case (e.g., **MIDV** datasets) only requires **one** label class.
+- Implements the standard U-Net architecture with skip connections.
 
-```bash
-              ┌───Conv──Conv───┐
-              ↑                ↓
-      Input →→ [64] → Pool →→ [128] → Pool →→ [256] → Pool →→ [512] → Pool →→ [1024]
-                       ↓           ↑                             ↓     ↑ 
-                       ↓           └───────── UpSampling ────────┘     ↑
-                       └────────────── Skip connections ───────────────┘
-      
-         ...Until the final 1-channel (sigmoid) output for binary segmentation.
-```
+- Uses efficient separable Convolutions.
 
-#### Why **mean IoU** & **Binary Crossentropy**?
+- Configurable for binary (by default) but can be extend to multi-class segmentation.
 
-- **Mean IoU** (Intersection over Union) is a common metric for segmentation quality; it directly measures overlap between the predicted mask and ground truth.
+### Training Pipeline (`scripts/train.py`):
 
-- **Binary Crossentropy** is a straightforward choice for binary segmentation, treating each pixel as a binary classification. You can switch to Dice loss, focal loss, etc., if that fits better.
+- Configurable hyperparameters (epochs, batch size, learning rate).
 
-This approach can be easily extended to multi-class tasks by changing the final layer and using a multi-class loss like **categorical_crossentropy**.
+- Supports custom loss functions: Includes `Dice Loss` (`utils/loss.py`) as the default and `IoU` (Jaccard) Loss. Standard `Binary Cross-Entropy` can also be used.
+
+- Monitors performance using `MeanIoU` (Intersection over Union) and dice_coef metrics (`utils/metrics.py`).
+
+- Integrates TensorBoard logging (`./logs`) for real-time monitoring.
+
+### Inference Pipeline (`scripts/inference.py`):
+
+- Performs segmentation on single images using a trained model.
+
+- Handles model loading, including necessary custom objects (`loss/metrics`).
+
+- Outputs a binary segmentation mask.
+
+- Includes optional cropping of the original image based on the largest contour found in the predicted mask (`utils/image.py`).
+
+### Evaluation (`scripts/benchmark.py`):
+
+- Calculates the overall `MeanIoU` for a model on a dataset (using JSON polygon ground truth).
+
+- Identifies and logs images performing below a specified `IoU` threshold.
+
+### Environment Checks:
+
+- `scripts/check_tf_install.py`: Verifies basic TensorFlow/Keras installation and device detection.
+
+- `scripts/check_gpu_benchmark.py`: Specifically tests GPU detection and runs a performance comparison against the CPU.
+
+![alt text][logo]
+
+https://blog.kakaocdn.net/dn/dl4wT6/btrExHIjSMg/tpwT1gPL0yFzAPZWNDk8WK/img.png
+
+[logo]: https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 2"
+## Model Architecture
+
+This project utilizes the U-Net architecture, originally proposed by [Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597) which is renowned for its effectiveness in image segmentation tasks. The architecture consists of:
+
+* **Encoder (Contracting Path):** Captures context from the input image. It uses repeated blocks, typically consisting of Convolutional layers (e.g., `Conv2D` or `SeparableConv2D`), `BatchNormalization`, and `ReLU` activation, followed by `MaxPooling` operations. This progressively reduces the spatial resolution (height/width) while increasing the number of feature channels (depth).
+* **Bottleneck:** The central part of the network connecting the encoder and decoder. It operates at the lowest spatial resolution and typically has the highest number of feature channels.
+* **Decoder (Expansive Path):** Gradually reconstructs the high-resolution segmentation map. It uses `Transposed Convolutions` (or Upsampling followed by Convolution) to increase the spatial resolution. **Skip Connections** are a key feature, concatenating feature maps from the corresponding encoder stage with the upsampled features from the decoder. This allows the network to combine high-level semantic information (what the object is) learned in the deeper layers with low-level spatial details (where edges are) from earlier layers, enabling precise boundary localization in the output mask.
+
+*(Refer to the original paper or the implementation in `model/u_net.py` for the specific layer configurations, filter counts, and use of Separable Convolutions in this project.)*
+
+### Binary vs. Multi-Class Segmentation Support
+
+The `U_NET` function in `model/u_net.py` is built to handle both binary and multi-class segmentation tasks directly. This flexibility is controlled by the `num_classes` argument passed when creating the model instance:
+
+* **Binary Segmentation (Default Behaviour):**
+    * Instantiate the model providing `num_classes=1` (or omitting it, as 1 is the default):
+        ```python
+        # Example for input size 256x256x3
+        model = U_NET(input_size=(256, 256, 3), num_classes=1)
+        ```
+    * The model's final layer automatically becomes a `Conv2D` with **1 filter** and `sigmoid` activation.
+    * **Output Shape:** `(Height, Width, 1)` - A single-channel probability map (values 0.0 to 1.0) representing the likelihood of each pixel belonging to the single foreground class.
+    * **Training Setup (`scripts/train.py`):** Requires a binary loss function (like the default `dice_loss` or `binary_crossentropy`), single-channel binary ground truth masks, and metrics configured for 2 categories (e.g., `MeanIoU(num_classes=2)` for background + foreground).
+
+* **Multi-Class Segmentation:**
+    * Instantiate the model providing `num_classes=N`, where `N` is the total number of distinct classes (e.g., `background + car + building = 3 classes`):
+        ```python
+        # Example for input size 256x256x3 and 3 classes
+        model = U_NET(input_size=(256, 256, 3), num_classes=3)
+        ```
+    * The model final layer automatically becomes a `Conv2D` with **N filters** and `softmax` activation.
+    * **Output Shape:** `(Height, Width, N)` - A multi-channel map where each channel corresponds to a class, containing the probability distribution across classes for each pixel.
+    * **Training Setup (`scripts/train.py`):**
+        1.  **Ground Truth Masks:** Must be formatted for multi-class (e.g., integer labels `(H, W)` or `(H, W, 1)` where values are class indices 0 to N-1).
+        2.  **Loss Function:** Change the loss to a suitable multi-class loss (e.g., `tf.keras.losses.SparseCategoricalCrossentropy` if using integer labels).
+        3.  **Metrics:** Update the `num_classes` parameter in `MeanIoU` to `N` (e.g., `MeanIoU(num_classes=3)`).
+
 
 ## Installation
 
-1. **Clone the repository**:
-   ```bash
-   $ git clone https://github.com/planck-epoch/unet-image-segmentation.git
-   $ cd unet-image-segmentation
-   ```
-
-2. **Create and activate a Python environment (recommended)** :
+1.  **Clone Repository:**
     ```bash
-    $ python3 -m venv venv
-    $ source venv/bin/activate  
+    git clone https://github.com/planck-epoch/unet-image-segmentation.git
+    cd unet-image-segmentation
     ```
 
-3. **Install dependencies:**
+2.  **Create Environment (Recommended):**
+    Requires **Python 3.8+**.
     ```bash
-    $ pip install -r requirements.txt
+    # Create environment
+    python3 -m venv venv
+    # Activate environment
+    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
     ```
-    **Note:** If you’re on macOS, you can use `requirements.macOS.txt` to set up Tensorflow with GPU support on Mac
+
+3.  **Install Dependencies:**
+    Installs TensorFlow, OpenCV, NumPy, **tflite-support**, etc. Ensure `pip` is updated (`pip install --upgrade pip`).
+    ```bash
+    pip install -r requirements.txt
+    ```
+    * **Note:** Ensure `tflite-support` is listed in your `requirements.txt` file if using the metadata script.
+    * **macOS Users:** Refer to official TensorFlow docs for Metal GPU support.
+
+4.  **Verify General Installation (Optional):**
+    Run the basic environment check script from its new location:
+    ```bash
+    python utils/troubleshoot/check_tf_install.py
+    ```
+    This confirms basic imports, model building, and compilation work correctly.
+
+5.  **Verify GPU Performance (Optional, if GPU expected):**
+    To specifically test GPU detection and performance, run the benchmark script from its new location:
+    ```bash
+    python utils/troubleshoot/check_gpu_benchmark.py
+    ```
+    This lists GPUs runs an benchmark on CPU vs. GPU and reports average times/speedup.
 
 ## Getting Started
 
@@ -212,8 +274,6 @@ Have fun and happy coding!
 
 ## References
 [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597)
-
-[MIDV-500 Dataset (for ID card images)](https://arxiv.org/abs/1807.05786)
 
 [TensorFlow Keras Documentation](https://www.tensorflow.org/api_docs/python/tf/keras)
 

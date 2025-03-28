@@ -186,7 +186,7 @@ By default, it uses:
 
 - RGB input images (3‐channel).
 - Grayscale masks (1‐channel).
-- **Binary crossentropy** as the loss, **mean IoU** & **accuracy** as metrics.
+- **Dice Coefficient** (averaged over the batch) as the loss and **Mean IoU** (mean intersection over union) as metric.
 
 You can edit hyperparameters, callbacks, or data paths inside the script.
 

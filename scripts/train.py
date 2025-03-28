@@ -66,19 +66,19 @@ def parse_args():
         "--epochs",
         type=int,
         default=DEFAULT_EPOCHS,
-        help=f"Number of epochs (default: {DEFAULT_EPOCHS})." # Use f-string
+        help=f"Number of epochs (default: {DEFAULT_EPOCHS})."
     )
     parser.add_argument(
         "--batch-size",
         type=int,
         default=DEFAULT_BATCHSIZE,
-        help=f"Batch size (default: {DEFAULT_BATCHSIZE})." # Use f-string
+        help=f"Batch size (default: {DEFAULT_BATCHSIZE})."
     )
     parser.add_argument(
         "--learning-rate",
         type=float,
         default=DEFAULT_LR,
-        help=f"Learning rate for Adam optimizer (default: {DEFAULT_LR})." # Use f-string
+        help=f"Learning rate for Adam optimizer (default: {DEFAULT_LR})."
     )
     parser.add_argument(
         "--model-out",

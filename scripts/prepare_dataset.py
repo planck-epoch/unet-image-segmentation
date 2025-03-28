@@ -79,7 +79,6 @@ def main():
     parser = argparse.ArgumentParser(
         description="Prepare dataset by applying rotations, flips, and blurs to images."
     )
-    # Update these defaults to match your new structure:
     parser.add_argument(
         "--import_files",
         default="../datasets/data/images/raw_selfie/*",
@@ -107,7 +106,6 @@ def main():
     IMAGE_RESULT_DIR = args.image_result_dir
     ANNOTATION_RESULT_DIR = args.annotation_result_dir
 
-    # Clean up existing result directories
     if os.path.exists(IMAGE_RESULT_DIR):
         print(f"Removing existing directory: {IMAGE_RESULT_DIR}")
         shutil.rmtree(IMAGE_RESULT_DIR, ignore_errors=True)
@@ -125,8 +123,8 @@ def main():
     if len(img_list) != len(label_list):
         print("Warning: The number of images and annotation files differ.")
         print(f"Images found: {len(img_list)}, Annotations found: {len(label_list)}")
-        # sys.exit(1)  # or handle differently
-
+        # sys.exit(1)
+        
     # Process each (image, annotation) pair
     for i, (img_path, label_path) in enumerate(zip(img_list, label_list)):
         image, mask, coords = read_image(img_path, label_path)
@@ -168,9 +166,6 @@ def main():
                 cv2.GaussianBlur(image_aug, (9, 9), 0),
                 cv2.blur(image_aug, (9, 9)),
             ]
-            # The brightness/contrast lines are commented out in the original script:
-            # image_list.append(change_brightness_contrast(image_aug, random.uniform(1.0, 3.0), random.randint(20, 40)))
-            # etc.
 
             # Write out each variant
             for k, variant_img in enumerate(image_list):

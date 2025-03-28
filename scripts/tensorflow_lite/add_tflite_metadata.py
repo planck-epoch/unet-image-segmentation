@@ -181,17 +181,17 @@ class MetadataPopulatorForSegmentation:
     def _get_tensor_details(self):
         """ Uses Interpreter to find input/output tensor details. """
         interpreter = tf.lite.Interpreter(model_path=self.model_file)
-        interpreter.allocate_tensors() # Needed to query details
+        interpreter.allocate_tensors()
 
         input_details = interpreter.get_input_details()
         if not input_details:
              raise ValueError("Could not get input details from the TFLite model.")
-        self.input_detail = input_details[0] # Assume single input
+        self.input_detail = input_details[0] 
 
         output_details = interpreter.get_output_details()
         if not output_details:
              raise ValueError("Could not get output details from the TFLite model.")
-        self.output_detail = output_details[0] # Assume single output
+        self.output_detail = output_details[0]
 
         print("\n--- Detected Tensor Details ---")
         print(f"Input Name : {self.input_detail['name']} | Shape: {self.input_detail['shape']} | Type: {self.input_detail['dtype']}")
@@ -202,7 +202,7 @@ class MetadataPopulatorForSegmentation:
         try:
              self.input_height = int(self.input_detail['shape'][1])
              self.input_width = int(self.input_detail['shape'][2])
-             self.num_output_classes = int(self.output_detail['shape'][-1]) # Last dimension
+             self.num_output_classes = int(self.output_detail['shape'][-1])
         except (IndexError, TypeError) as e:
              raise ValueError(f"Could not parse tensor shapes for H/W/Classes: {e}")
 
@@ -220,7 +220,7 @@ class MetadataPopulatorForSegmentation:
 
         # --- Input Tensor Info ---
         input_meta = _metadata_fb.TensorMetadataT()
-        input_meta.name = self.input_detail["name"] # Use detected name
+        input_meta.name = self.input_detail["name"]
         input_meta.description = (
             f"Input image for segmentation. Expected {self.input_height}x{self.input_width} RGB image. "
             f"Pixel values should be normalized using mean={self.input_norm_mean}, std={self.input_norm_std}."
@@ -241,13 +241,13 @@ class MetadataPopulatorForSegmentation:
 
         # Input Stats (Range before normalization)
         input_stats = _metadata_fb.StatsT()
-        input_stats.max = [float(self.input_max)] # Ensure float
-        input_stats.min = [float(self.input_min)] # Ensure float
+        input_stats.max = [float(self.input_max)]
+        input_stats.min = [float(self.input_min)]
         input_meta.stats = input_stats
 
         # --- Output Tensor Info ---
         output_meta = _metadata_fb.TensorMetadataT()
-        output_meta.name = self.output_detail["name"] # Use detected name
+        output_meta.name = self.output_detail["name"]
         
         if self.num_output_classes == 1:
             output_meta.description = (
@@ -260,13 +260,8 @@ class MetadataPopulatorForSegmentation:
                 f"Shape: {self.output_detail['shape']}. Each channel corresponds to a class probability."
              )
              
-        # Content type depends on what the output represents.
-        # For segmentation masks, often ImageProperties or FeatureProperties are used.
-        # Let's describe it as an Image where each pixel/channel has meaning.
+       
         output_meta.content = _metadata_fb.ContentT()
-        # If multi-class output corresponds to labels, contentProperties could be FeatureProperties.
-        # If output is mask (binary/multi-channel), ImageProperties might fit better.
-        # Let's use ImageProperties for a segmentation mask output.
         output_meta.content.contentProperties = _metadata_fb.ImagePropertiesT()
         output_meta.content.contentProperties.colorSpace = _metadata_fb.ColorSpaceType.GRAYSCALE if self.num_output_classes == 1 else _metadata_fb.ColorSpaceType.UNKNOWN # Or RGB if channels=3? Needs context.
         output_meta.content.contentPropertiesType = _metadata_fb.ContentProperties.ImageProperties
@@ -357,7 +352,6 @@ def main():
     export_model_path = os.path.join(args.export_directory, model_basename)
 
     # --- Copy Model to Export Directory ---
-    # Metadata is written directly into the file, so work on a copy
     print(f"Copying original model to export location: {export_model_path}")
     try:
         tf.io.gfile.copy(args.model_file, export_model_path, overwrite=True)
@@ -369,8 +363,8 @@ def main():
     try:
         print("Initializing metadata populator...")
         populator = MetadataPopulatorForSegmentation(
-            model_file=args.model_file, # Pass original path to read tensor details
-            export_path=export_model_path, # Path where metadata will be written
+            model_file=args.model_file,
+            export_path=export_model_path,
             model_name=args.model_name,
             model_version=args.model_version,
             model_description=args.model_description,
@@ -382,13 +376,11 @@ def main():
             input_max=args.input_max,
             label_file_path=args.label_file
         )
-        populator.populate() # Creates and writes metadata
+        populator.populate()
 
     except Exception as e:
         print(f"\n--- Error during metadata population ---")
         print(f"{e}")
-        # Optionally clean up copied file?
-        # if os.path.exists(export_model_path): os.remove(export_model_path)
         print("---------------------------------------\n")
         sys.exit(1)
 
@@ -417,12 +409,10 @@ def main():
 
     except Exception as e:
         print(f"\nWarning: Error during metadata validation/display: {e}")
-        # Don't exit, population might have succeeded even if display fails
 
     print("\nScript finished successfully.")
     print(f"Model with metadata saved to: {export_model_path}")
 
 
 if __name__ == "__main__":
-    # Note: No need for absl.app.run() if using argparse
     main()

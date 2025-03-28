@@ -42,12 +42,10 @@ from tensorflow.keras.models import load_model
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(PROJECT_ROOT)
 
-# Import necessary custom functions (if model loading requires them)
-# Make sure these are available and correct
 from utils.loss import dice_loss, iou_loss, jaccard_loss
 from utils.metrics import dice_coef, iou_coef
 
-# Constants for preprocessing - should match training
+
 IMG_HEIGHT = 256
 IMG_WIDTH = 256
 # Minimum contour area to consider for cropping (adjust as needed)
@@ -105,11 +103,10 @@ def load_and_preprocess_image(input_path: str, target_height: int, target_width:
         return None, None, None, None
     original_height, original_width = img_bgr.shape[:2]
     img_normalized = img_bgr.astype(np.float32) / 255.0
-    # Use INTER_LINEAR for general resizing consistency
     resized_img = cv2.resize(
         img_normalized, (target_width, target_height), interpolation=cv2.INTER_LINEAR
     )
-    input_tensor = np.expand_dims(resized_img, axis=0) # Add batch dimension
+    input_tensor = np.expand_dims(resized_img, axis=0)
     return input_tensor, img_bgr, original_height, original_width
 
 def predict_mask(model: tf.keras.Model, input_tensor: np.ndarray) -> Optional[np.ndarray]:
@@ -147,8 +144,6 @@ def postprocess_and_save_results(
 
     # --- 1. Process and Save Mask ---
     print("Processing predicted mask...")
-    # Resize probability mask back to original image size
-    # Use INTER_LINEAR for probabilities before thresholding
     try:
         resized_prob_mask = cv2.resize(
             prob_mask_pred, (orig_width, orig_height), interpolation=cv2.INTER_LINEAR
@@ -170,7 +165,7 @@ def postprocess_and_save_results(
     # Save the binary mask
     print(f"Saving binary mask to {output_mask_path} ...")
     mask_dir = os.path.dirname(output_mask_path)
-    if mask_dir: # Create dir only if path includes one
+    if mask_dir:
         os.makedirs(mask_dir, exist_ok=True)
     try:
         if not cv2.imwrite(output_mask_path, binary_mask):
@@ -180,7 +175,6 @@ def postprocess_and_save_results(
 
     # --- 2. Find Contour and Crop Original Image ---
     print("Finding largest contour for cropping...")
-    # Find contours in the *binary* mask
     # RETR_EXTERNAL finds only outer contours, CHAIN_APPROX_SIMPLE saves memory
     contours, hierarchy = cv2.findContours(
         binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
@@ -203,7 +197,7 @@ def postprocess_and_save_results(
             # Save the cropped image
             print(f"Saving cropped image to {output_cropped_path} ...")
             crop_dir = os.path.dirname(output_cropped_path)
-            if crop_dir: # Create dir only if path includes one
+            if crop_dir:
                  os.makedirs(crop_dir, exist_ok=True)
             try:
                 if not cv2.imwrite(output_cropped_path, cropped_bgr):
@@ -237,16 +231,13 @@ def main():
     required_custom_objects = {
          "dice_loss": dice_loss,
          "dice_coef": dice_coef
-         # Add iou_loss or iou_coef if the specific model used them
     }
     print(f"Using custom_objects for load_model: {list(required_custom_objects.keys())}")
 
     try:
-        # Load model with compile=False for inference
         model = load_model(args.model, custom_objects=required_custom_objects, compile=False)
         print("Model loaded successfully.")
     except Exception as e:
-        # Improved error message guidance
         print(f"\n--- Error loading model ---")
         print(f"{e}")
         print("\nTroubleshooting:")
@@ -280,9 +271,9 @@ def main():
         orig_h,
         orig_w,
         args.output_mask,
-        args.output_cropped, # Pass the correct argument name
+        args.output_cropped, 
         args.threshold,
-        args.min_area       # Pass min area argument
+        args.min_area
     )
 
     print("Inference script finished.")

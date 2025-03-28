@@ -33,7 +33,7 @@ def U_NET(input_size, num_classes=1, dropout_rate=0.2, use_batch_norm=True):
         - Output Layer: 1x1 Convolution with sigmoid (binary) or softmax (multi-class) activation.
     """
     inputs = Input(shape=input_size)
-    filters = [64, 128, 256, 512] # Filter sizes for encoder/decoder levels
+    filters = [64, 128, 256, 512]
     skip_connections = []
 
     # --- Encoder ---
@@ -42,7 +42,7 @@ def U_NET(input_size, num_classes=1, dropout_rate=0.2, use_batch_norm=True):
         # Two convolutional blocks per level
         x = conv_block(x, f, use_batch_norm=use_batch_norm)
         x = conv_block(x, f, use_batch_norm=use_batch_norm)
-        skip_connections.append(x) # Save connection BEFORE pooling
+        skip_connections.append(x)
         x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 
     # --- Bottleneck ---
@@ -53,7 +53,6 @@ def U_NET(input_size, num_classes=1, dropout_rate=0.2, use_batch_norm=True):
          x = layers.Dropout(dropout_rate)(x)
 
     # --- Decoder ---
-    # Reverse filter list and skip connections for decoder
     filters.reverse()
     skip_connections.reverse()
 
@@ -67,7 +66,8 @@ def U_NET(input_size, num_classes=1, dropout_rate=0.2, use_batch_norm=True):
         x = layers.Concatenate()([x, skip])
 
         # Optional dropout
-        if dropout_rate > 0.0 and i < len(filters) -1 : # Apply dropout except last decoder block
+        # Apply dropout except last decoder block
+        if dropout_rate > 0.0 and i < len(filters) -1 :
              x = layers.Dropout(dropout_rate)(x)
 
         # Two convolutional blocks per level

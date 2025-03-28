@@ -91,7 +91,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--low_score_log",
         type=str,
-        default=None, # Optional: path to save low IoU filenames
+        default=None,
         help="Optional file path to save the list of files scoring below the iou_threshold."
     )
     return parser.parse_args()
@@ -179,8 +179,8 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
 
 def calculate_sample_iou(y_true_sample: np.ndarray, y_pred_sample: np.ndarray, smooth: float = SMOOTH) -> float:
      """ Calculates IoU for a single sample (H, W, 1) or (H, W). """
-     y_true = tf.cast(y_true_sample.squeeze(), tf.float32) # Ensure 2D
-     y_pred = tf.cast(y_pred_sample.squeeze(), tf.float32) # Ensure 2D
+     y_true = tf.cast(y_true_sample.squeeze(), tf.float32)
+     y_pred = tf.cast(y_pred_sample.squeeze(), tf.float32)
      
      intersection = tf.reduce_sum(y_true * y_pred)
      sum_true = tf.reduce_sum(y_true)
@@ -188,8 +188,7 @@ def calculate_sample_iou(y_true_sample: np.ndarray, y_pred_sample: np.ndarray, s
      union = sum_true + sum_pred - intersection
      
      iou = (intersection + smooth) / (union + smooth)
-     return float(iou.numpy()) # Return as Python float
-
+     return float(iou.numpy())
 
 def main():
     args = parse_args()
@@ -216,12 +215,10 @@ def main():
 
     # --- Load Model ---
     print(f"Loading model: {args.model} ...")
-    # Define custom objects *required* by the specific saved model file
     # ** Edit this dictionary based on the model being loaded **
     required_custom_objects = {
          "dice_loss": dice_loss,
          "dice_coef": dice_coef
-         # Add others like iou_loss, iou_coef if needed
     }
     print(f"Using custom_objects for load_model: {list(required_custom_objects.keys())}")
     try:
@@ -230,7 +227,6 @@ def main():
     except Exception as e:
         print(f"\n--- Error loading model ---")
         print(f"{e}")
-        # (Error message guidance as before) ...
         print("---------------------------\n")
         sys.exit(1)
 
@@ -244,7 +240,6 @@ def main():
     skipped_count = 0
 
     for img_path in image_files:
-        # Construct expected JSON path
         relative_path = os.path.relpath(img_path, images_root)
         base_name = os.path.splitext(relative_path)[0]
         json_path = os.path.join(gtruth_root, base_name + ".json")
@@ -300,8 +295,7 @@ def main():
         
         if sample_iou < args.iou_threshold:
              low_iou_files.append((file_id, sample_iou))
-             # Optionally print immediately
-             # print(f"\nBelow threshold (IoU={sample_iou:.3f}): {file_id}")
+             print(f"\nBelow threshold (IoU={sample_iou:.3f}): {file_id}")
 
         # --- Update Overall Metric ---
         # update_state expects labels (y_true) then predictions (y_pred)
@@ -309,7 +303,7 @@ def main():
              iou_metric.update_state(mask_true_tensor, mask_pred_binary)
         except Exception as e:
              print(f"\nError updating MeanIoU state for {file_id}: {e}")
-             # Potentially log shapes: print(mask_true_tensor.shape, mask_pred_binary.shape)
+             #print(mask_true_tensor.shape, mask_pred_binary.shape)
 
 
     print("\nEvaluation complete.")

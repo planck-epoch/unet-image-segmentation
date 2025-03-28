@@ -27,8 +27,6 @@ import pydash as _
 # Import your link lists
 from midv_links import MIDV500_LINKS, MIDV2019_EXTRA_LINKS
 
-# --- Configuration & Globals -------------------------------------
-
 TARGET_PATH = "dataset/data/"
 TEMP_PATH = "dataset/temp/"
 TEMP_IMAGE_PATH = os.path.join(TEMP_PATH, "image")
@@ -42,7 +40,6 @@ SEED = 230
 PATH_OFFSET_500 = 40      # for ftp://smartengines.com/midv-500/dataset/...
 PATH_OFFSET_2019 = 56     # for ftp://smartengines.com/midv-500/extra/midv-2019/dataset/...
 
-# -----------------------------------------------------------------
 
 
 def read_image(img_path: str, label_path: str):
@@ -112,7 +109,7 @@ def download_and_extract(
             if not os.path.isfile(full_zip_path):
                 print("Downloading:", link)
                 wget.download(link, full_zip_path)
-                print()  # newline after progress
+                print()
 
             print("Unzipping:", full_zip_path)
             with zipfile.ZipFile(full_zip_path, "r") as zip_ref:
@@ -132,7 +129,6 @@ def download_and_extract(
             os.remove(stray_json)
 
         # For each subfolder in images/ and ground_truth/
-        # these subfolders typically hold each card sample
         for images_sub, ground_sub in zip(
             sorted(os.listdir(img_dir_path)),
             sorted(os.listdir(gt_dir_path))
@@ -228,22 +224,13 @@ def main():
     3) Download & extract MIDV-2019 Extra (optional)
     4) Split data into train/val/test
     """
-    # 1) Remove or recreate the temp directory
     if os.path.exists(TEMP_PATH):
         print(f"Removing existing temp dir: {TEMP_PATH}")
         shutil.rmtree(TEMP_PATH, ignore_errors=True)
     os.makedirs(TEMP_PATH, exist_ok=True)
-
-    # 2) Download & extract MIDV-500
     download_and_extract(MIDV500_LINKS, PATH_OFFSET_500, dataset_label="MIDV-500")
-
-    # 3) Download & extract MIDV-2019 Extra
-    #    (If your list is empty, it will just skip quietly)
     download_and_extract(MIDV2019_EXTRA_LINKS, PATH_OFFSET_2019, dataset_label="MIDV-2019 Extra")
-
-    # 4) Train/Val/Test Split
     train_validation_split()
-
 
 if __name__ == "__main__":
     main()

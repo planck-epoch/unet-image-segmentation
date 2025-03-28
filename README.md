@@ -1,4 +1,4 @@
-# U-Net Semantic Segmentation (TensorFlow)
+# Image Semantic Segmentation (TensorFlow)
 
 ```bash
 ██╗   ██╗      ███╗   ██╗███████╗████████╗

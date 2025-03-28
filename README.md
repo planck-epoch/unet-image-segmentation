@@ -163,7 +163,7 @@ The `U_NET` function in `model/u_net.py` is built to handle both binary and mult
 
 ## Getting Started
 
-### Using MIDV ID Card Data
+### Using MIDV dataset
 1. **Download the dataset**:
 By using the provided script:
     ```bash
@@ -206,11 +206,6 @@ By default, it uses:
 - **Binary crossentropy** as the loss, **mean IoU** & **accuracy** as metrics.
 
 You can edit hyperparameters, callbacks, or data paths inside the script.
-
-### TODO:
-- Add argument for specifying training/validation splits if you want.
-- Check GPU support and performance optimizations.
-- Possibly integrate TensorBoard logging.
 
 ## Inference
 Run inference on new images using a trained model:
@@ -258,8 +253,6 @@ Contributions are welcome! To get started:
     ```
 
 4. Open a Pull Request (PR) describing your changes.
-
-TODO: Provide style guides, code coverage guidelines, and continuous integration details for larger contributions.
 
 ## License
 This repository is open source and released under the GNU General Public License (GPL) Version 3, 29 June 2007. You're free to use, modify, and share the code—as long as you follow the terms of the GPL. 

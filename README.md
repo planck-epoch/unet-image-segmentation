@@ -43,8 +43,8 @@ To illustrate this model capability even with minimal training (e.g., just 10 ep
     <td align="center"><b>2. Resulting Cropped Object</b></td>
   </tr>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/planck-epoch/unet-image-segmentation/main/samples/usage/portugal_id_card/output_mask.png" alt="Predicted Mask" width="300"></td>
-    <td><img src="https://raw.githubusercontent.com/planck-epoch/unet-image-segmentation/main/samples/usage/portugal_id_card/output_pred.png" alt="Cropped ID Card" width="300"></td>
+    <td><img src="https://raw.githubusercontent.com/planck-epoch/unet-image-segmentation/main/samples/usage/portugal_id_card/output_mask.png" alt="Predicted Mask" width="256"></td>
+    <td><img src="https://raw.githubusercontent.com/planck-epoch/unet-image-segmentation/main/samples/usage/portugal_id_card/output_pred.png" alt="Cropped ID Card" width="256"></td>
     </tr>
   <tr>
     <td align="center"><i>The segmentation output from the model,<br>highlighting the predicted ID card pixels.</i></td>

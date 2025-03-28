@@ -27,61 +27,44 @@
 
 ## Overview
 
-Welcome to this one-stop shop for `U-Net` semantic segmentation with `TensorFlow` and `Keras`. 
+Welcome to one-stop shop for `U-Net` semantic segmentation with `TensorFlow`.
 
 This project implements a robust pipeline inspired by the original U-Net ([Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597)) capable of separating foreground objects from the background pixel by pixel. 
 
 The primary application driving its development was the segmentation of identity documents (like `ID cards`) for downstream processing such as OCR and data validation (e.g., with [Regula SDK](https://regulaforensics.com/id-verification)). 
 
-However, the flexible design allows easy adaptation for diverse segmentation tasks across different domains (medical, satellite, etc.). Please consider this repository a strong starting point and learning tool; although based on production-proven concepts, it is not provided as a finalized, production-ready application.
+However, the flexible design allows easy adaptation for diverse segmentation tasks across different domains (medical, satellite, etc.). Please consider this repository a strong starting point and learning tool; although based on production-proven implementation, it is not provided as a finalized, production-ready application.
 
 
 ## Fetures
 
-### Data Management:
-
+### Data Management
 - `scripts/download_dataset.py`: Automatically download and extract standard datasets like [MIDV-500](https://arxiv.org/abs/1807.05786)/[MIDV-2019](https://arxiv.org/abs/1910.04009)
-
 - `scripts/prepare_dataset.py`: Splits raw labeled data (`images` + `masks`) into `train`/`validation` sets formatted for Keras `ImageDataGenerator`.
 
 ### U-Net Model
-
 - Implements the standard U-Net architecture with skip connections.
-
 - Uses efficient separable Convolutions.
-
 - Configurable for binary (by default) but can be extend to multi-class segmentation.
 
 ### Training Pipeline
-
 - Configurable hyperparameters (epochs, batch size, learning rate).
-
 - Supports custom loss functions: Includes `Dice Loss` (`utils/loss.py`) as the default and `IoU` (Jaccard) Loss. Standard `Binary Cross-Entropy` can also be used.
-
 - Monitors performance using `MeanIoU` (Intersection over Union) and dice_coef metrics (`utils/metrics.py`).
-
 - Integrates TensorBoard logging (`./logs`) for real-time monitoring.
 
 ### Inference Pipeline (`scripts/inference.py`):
-
 - Performs segmentation on single images using a trained model.
-
 - Handles model loading, including necessary custom objects (`loss/metrics`).
-
 - Outputs a binary segmentation mask.
-
 - Includes optional cropping of the original image based on the largest contour found in the predicted mask (`utils/image.py`).
 
 ### Evaluation
-
 - Calculates the overall `MeanIoU` for a model on a dataset (using JSON polygon ground truth).
-
 - Identifies and logs images performing below a specified `IoU` threshold.
 
 ### Environment Checks
-
 - `scripts/check_tf_install.py`: Verifies basic TensorFlow/Keras installation and device detection.
-
 - `scripts/check_gpu_benchmark.py`: Specifically tests GPU detection and runs a performance comparison against the CPU.
 
 ## Model Architecture

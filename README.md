@@ -84,11 +84,6 @@ However, the flexible design allows easy adaptation for diverse segmentation tas
 
 - `scripts/check_gpu_benchmark.py`: Specifically tests GPU detection and runs a performance comparison against the CPU.
 
-![alt text][logo]
-
-https://blog.kakaocdn.net/dn/dl4wT6/btrExHIjSMg/tpwT1gPL0yFzAPZWNDk8WK/img.png
-
-[logo]: https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 2"
 ## Model Architecture
 
 This project utilizes the U-Net architecture, originally proposed by [Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597) which is renowned for its effectiveness in image segmentation tasks. The architecture consists of:

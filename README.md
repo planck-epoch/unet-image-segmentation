@@ -53,7 +53,7 @@ However, the flexible design allows easy adaptation for diverse segmentation tas
 - Monitors performance using `MeanIoU` (Intersection over Union) and dice_coef metrics (`utils/metrics.py`).
 - Integrates TensorBoard logging (`./logs`) for real-time monitoring.
 
-### Inference Pipeline (`scripts/inference.py`):
+### Inference Pipeline
 - Performs segmentation on single images using a trained model.
 - Handles model loading, including necessary custom objects (`loss/metrics`).
 - Outputs a binary segmentation mask.
@@ -241,7 +241,6 @@ Contributions are welcome! To get started:
 This repository is open source and released under the GNU General Public License (GPL) Version 3, 29 June 2007. You're free to use, modify, and share the code—as long as you follow the terms of the GPL. 
 
 Have fun and happy coding!
-
 
 ## References
 [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597)

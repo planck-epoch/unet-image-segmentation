@@ -18,6 +18,7 @@ import sys
 import time
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras import backend as K 
 from typing import Optional, List
 
 # Suppress TensorFlow INFO/WARNING messages
@@ -28,15 +29,13 @@ print(f"--- TensorFlow GPU Benchmark (Intensive) ---")
 print(f"Using TensorFlow version: {tf.__version__}")
 print(f"TensorFlow installed at: {tf.__file__}")
 
-# --- Benchmark Parameters ---
 MATRIX_SIZE = 4096      # Increased Matrix Size (e.g., 4096x4096)
 NUM_TRIALS_PER_RUN = 50 # Increased Trials within each run
 WARMUP_TRIALS = 2       # Warm-up iterations before timing each run
 NUM_BENCHMARK_RUNS = 3  # Number of times to repeat the entire CPU vs GPU comparison
-# --- End Parameters ---
 
 # Use a small epsilon for stability if needed, though less critical now
-SMOOTH = 1e-9 
+SMOOTH = K.epsilon()
 
 def benchmark_matmul(device_name: str, size: int, trials: int, warmup: int) -> Optional[float]:
     """

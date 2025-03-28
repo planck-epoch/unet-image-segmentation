@@ -41,7 +41,7 @@ from typing import List, Optional, Sequence, Union
 
 # Ensure tflite-support is installed: pip install tflite-support
 try:
-    import flatbuffers # Required by tflite-support
+    import flatbuffers
     from tflite_support import metadata_schema_py_generated as _metadata_fb
     from tflite_support import metadata as _metadata
     print("TensorFlow Lite Support library imported successfully.")
@@ -59,8 +59,7 @@ tf.get_logger().setLevel('ERROR')
 
 print(f"Using TensorFlow version: {tf.__version__}")
 
-# Default license text (can be overridden)
-DEFAULT_LICENSE = "Apache License Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)"
+DEFAULT_LICENSE = "GNU GPL v3.0 (https://www.gnu.org/licenses/gpl-3.0.html)"
 
 def parse_args() -> argparse.Namespace:
     """ Parses command-line arguments. """
@@ -112,7 +111,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--label_file",
         type=str,
-        default=None, # Optional
+        default=None,
         help="Path to the label file (e.g., labels.txt). Required for multi-class "
              "segmentation if associating labels with output tensor."
     )
@@ -186,7 +185,7 @@ class MetadataPopulatorForSegmentation:
         input_details = interpreter.get_input_details()
         if not input_details:
              raise ValueError("Could not get input details from the TFLite model.")
-        self.input_detail = input_details[0] 
+        self.input_detail = input_details[0]
 
         output_details = interpreter.get_output_details()
         if not output_details:
@@ -210,7 +209,6 @@ class MetadataPopulatorForSegmentation:
     def _create_metadata(self):
         """Creates the metadata structure."""
 
-        # --- Model Info ---
         model_meta = _metadata_fb.ModelMetadataT()
         model_meta.name = self.model_name
         model_meta.description = self.model_description
@@ -260,8 +258,13 @@ class MetadataPopulatorForSegmentation:
                 f"Shape: {self.output_detail['shape']}. Each channel corresponds to a class probability."
              )
              
-       
+        # Content type depends on what the output represents.
+        # For segmentation masks, often ImageProperties or FeatureProperties are used.
+        # Let's describe it as an Image where each pixel/channel has meaning.
         output_meta.content = _metadata_fb.ContentT()
+        # If multi-class output corresponds to labels, contentProperties could be FeatureProperties.
+        # If output is mask (binary/multi-channel), ImageProperties might fit better.
+        # Let's use ImageProperties for a segmentation mask output.
         output_meta.content.contentProperties = _metadata_fb.ImagePropertiesT()
         output_meta.content.contentProperties.colorSpace = _metadata_fb.ColorSpaceType.GRAYSCALE if self.num_output_classes == 1 else _metadata_fb.ColorSpaceType.UNKNOWN # Or RGB if channels=3? Needs context.
         output_meta.content.contentPropertiesType = _metadata_fb.ContentProperties.ImageProperties
@@ -272,7 +275,6 @@ class MetadataPopulatorForSegmentation:
         output_stats.min = [0.0]
         output_meta.stats = output_stats
 
-        # --- Associated Files (Labels - Optional) ---
         if self.label_file_path:
             if not os.path.isfile(self.label_file_path):
                  print(f"Warning: Label file not found at {self.label_file_path}. Skipping association.")
@@ -337,7 +339,7 @@ def main():
         sys.exit(1)
     if args.label_file and not os.path.isfile(args.label_file):
          print(f"Warning: Specified label file not found -> {args.label_file}. Proceeding without it.")
-         args.label_file = None # Clear it so it's not used later
+         args.label_file = None
          
     if not args.export_directory:
          print(f"Error: Export directory must be specified.")
@@ -352,6 +354,7 @@ def main():
     export_model_path = os.path.join(args.export_directory, model_basename)
 
     # --- Copy Model to Export Directory ---
+    # Metadata is written directly into the file, so work on a copy
     print(f"Copying original model to export location: {export_model_path}")
     try:
         tf.io.gfile.copy(args.model_file, export_model_path, overwrite=True)
@@ -384,7 +387,6 @@ def main():
         print("---------------------------------------\n")
         sys.exit(1)
 
-    # --- Validation (Optional but Recommended) ---
     try:
         print("\nValidating model metadata...")
         displayer = _metadata.MetadataDisplayer.with_model_file(export_model_path)

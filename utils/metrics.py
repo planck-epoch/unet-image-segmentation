@@ -4,11 +4,13 @@ import tensorflow as tf
 # small epsilon value for smoothing to avoid division by zero
 SMOOTH = K.epsilon()
 
+
 def dice_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> tf.Tensor:
     """
     Computes the Dice coefficient, a common metric for segmentation tasks.
 
-    Calculates the Dice coefficient averaged over the batch. Assumes channels_last format.
+    Calculates the Dice coefficient averaged over the batch and channels. 
+    Assumes channels_last format (batch, H, W, C).
     Dice = (2 * |Intersection|) / (|A| + |B|)
          = (2 * sum(y_true * y_pred)) / (sum(y_true) + sum(y_pred))
 
@@ -21,7 +23,7 @@ def dice_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> t
                         to avoid division by zero.
 
     Returns:
-        tf.Tensor: The mean Dice coefficient (scalar).
+        tf.Tensor: The mean Dice coefficient (scalar tensor).
     """
     # Ensure inputs are float type
     y_true = tf.cast(y_true, tf.float32)
@@ -29,7 +31,7 @@ def dice_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> t
 
     # Sum over spatial dimensions (Height, Width) -> (batch, channels)
     # Assuming channels_last format (batch, H, W, C)
-    axis_to_sum = [1, 2] 
+    axis_to_sum = [1, 2]
 
     # Intersection: Sum of element-wise multiplication over spatial axes
     intersection = tf.reduce_sum(y_true * y_pred, axis=axis_to_sum)
@@ -38,15 +40,17 @@ def dice_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> t
     sum_true = tf.reduce_sum(y_true, axis=axis_to_sum)
     sum_pred = tf.reduce_sum(y_pred, axis=axis_to_sum)
 
-    # Calculate Dice coefficient score with smoothing
-    # Dice = (2 * Intersection + Smooth) / (Sum(True) + Sum(Pred) + Smooth)
-    # Adding smooth to numerator and denominator prevents 0/0 issues
+    # Calculate Dice coefficient score for each sample/channel with smoothing
+    # Dice_Score = (2 * Intersection + Smooth) / (Sum(True) + Sum(Pred) + Smooth)
     numerator = 2. * intersection + smooth
     denominator = sum_true + sum_pred + smooth
-    dice_score = numerator / denominator
+    dice_score = numerator / denominator # Shape: (batch, channels)
 
-    # Return the mean Dice score across the batch and channels
-    return tf.reduce_mean(dice_score)
+    # --- Calculate the mean over the batch and channels ---
+    mean_dice_score = tf.reduce_mean(dice_score)
+    # ----------------------------------------------------
+
+    return mean_dice_score # Return the final scalar mean value
 
 def iou_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> tf.Tensor:
     """

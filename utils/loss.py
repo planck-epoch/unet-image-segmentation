@@ -1,7 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras import backend as K # Keras backend can still be useful
-from typing import Callable # For type hinting functions if needed
-
+from tensorflow.keras import backend as K
+from typing import Callable
 from .metrics import dice_coef
 
 # small epsilon value for smoothing to avoid division by zero

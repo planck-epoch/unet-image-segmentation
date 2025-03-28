@@ -43,17 +43,20 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from tensorflow.keras import backend as K 
 from glob import glob
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(PROJECT_ROOT)
+
 from utils.loss import dice_loss, iou_loss, jaccard_loss
 from utils.metrics import dice_coef, iou_coef
 
+# Constants
 IMG_HEIGHT = 256
 IMG_WIDTH = 256
 # Use a small epsilon for manual IoU calculation stability
-SMOOTH = 1e-6
+SMOOTH = K.epsilon()
 
 def parse_args() -> argparse.Namespace:
     """ Parses command-line arguments. """
@@ -86,7 +89,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--low_score_log",
         type=str,
-        default=None,
+        default=None, # Optional: path to save low IoU filenames
         help="Optional file path to save the list of files scoring below the iou_threshold."
     )
     return parser.parse_args()
@@ -140,7 +143,9 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
 
         mask = np.zeros((orig_h, orig_w), dtype=np.uint8) # Start with 0
 
-        if quad: 
+        if quad: # Check if quad list is not empty
+            # Convert points to integer format required by drawContours
+            # Use raw points, approxPolyDP seemed too aggressive
             points = np.array(quad, dtype=np.int32)
             # Ensure shape is (N, 1, 2) for drawContours
             if points.ndim == 2:
@@ -154,9 +159,12 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
                 # Continue with potentially empty mask
 
         # Resize to target size (e.g., 256x256)
+        # Use INTER_NEAREST for binary masks to avoid intermediate values
         mask_resized = cv2.resize(mask, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
+
         # Ensure values are 0 or 1 (resize might introduce noise if not INTER_NEAREST)
         mask_binary = (mask_resized > 128).astype(np.uint8) # Threshold just in case
+
         # Add batch and channel dims -> (1, H, W, 1)
         return np.expand_dims(mask_binary, axis=[0, -1])
 
@@ -169,8 +177,8 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
 
 def calculate_sample_iou(y_true_sample: np.ndarray, y_pred_sample: np.ndarray, smooth: float = SMOOTH) -> float:
      """ Calculates IoU for a single sample (H, W, 1) or (H, W). """
-     y_true = tf.cast(y_true_sample.squeeze(), tf.float32)
-     y_pred = tf.cast(y_pred_sample.squeeze(), tf.float32)
+     y_true = tf.cast(y_true_sample.squeeze(), tf.float32) # Ensure 2D
+     y_pred = tf.cast(y_pred_sample.squeeze(), tf.float32) # Ensure 2D
      
      intersection = tf.reduce_sum(y_true * y_pred)
      sum_true = tf.reduce_sum(y_true)
@@ -178,7 +186,8 @@ def calculate_sample_iou(y_true_sample: np.ndarray, y_pred_sample: np.ndarray, s
      union = sum_true + sum_pred - intersection
      
      iou = (intersection + smooth) / (union + smooth)
-     return float(iou.numpy())
+     return float(iou.numpy()) # Return as Python float
+
 
 def main():
     args = parse_args()
@@ -205,9 +214,12 @@ def main():
 
     # --- Load Model ---
     print(f"Loading model: {args.model} ...")
+    # Define custom objects *required* by the specific saved model file
+    # ** Edit this dictionary based on the model being loaded **
     required_custom_objects = {
          "dice_loss": dice_loss,
          "dice_coef": dice_coef
+         # Add others like iou_loss, iou_coef if needed
     }
     print(f"Using custom_objects for load_model: {list(required_custom_objects.keys())}")
     try:
@@ -216,6 +228,7 @@ def main():
     except Exception as e:
         print(f"\n--- Error loading model ---")
         print(f"{e}")
+        # (Error message guidance as before) ...
         print("---------------------------\n")
         sys.exit(1)
 
@@ -229,6 +242,7 @@ def main():
     skipped_count = 0
 
     for img_path in image_files:
+        # Construct expected JSON path
         relative_path = os.path.relpath(img_path, images_root)
         base_name = os.path.splitext(relative_path)[0]
         json_path = os.path.join(gtruth_root, base_name + ".json")
@@ -278,11 +292,14 @@ def main():
         mask_pred_binary = (mask_pred_prob > args.pred_threshold).astype(np.uint8)
 
         # --- Calculate Sample IoU for Logging ---
-        sample_iou = calculate_sample_iou(mask_true_tensor[0], mask_pred_binary[0])
+        # Use temporary metric or manual calculation for *this sample only*
+        # Using manual calculation helper function:
+        sample_iou = calculate_sample_iou(mask_true_tensor[0], mask_pred_binary[0]) # Pass single masks
         
         if sample_iou < args.iou_threshold:
              low_iou_files.append((file_id, sample_iou))
-             print(f"\nBelow threshold (IoU={sample_iou:.3f}): {file_id}")
+             # Optionally print immediately
+             # print(f"\nBelow threshold (IoU={sample_iou:.3f}): {file_id}")
 
         # --- Update Overall Metric ---
         # update_state expects labels (y_true) then predictions (y_pred)
@@ -290,7 +307,7 @@ def main():
              iou_metric.update_state(mask_true_tensor, mask_pred_binary)
         except Exception as e:
              print(f"\nError updating MeanIoU state for {file_id}: {e}")
-             #print(mask_true_tensor.shape, mask_pred_binary.shape)
+             # Potentially log shapes: print(mask_true_tensor.shape, mask_pred_binary.shape)
 
 
     print("\nEvaluation complete.")

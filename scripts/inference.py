@@ -45,10 +45,10 @@ sys.path.append(PROJECT_ROOT)
 from utils.loss import dice_loss, iou_loss, jaccard_loss
 from utils.metrics import dice_coef, iou_coef
 
-
+# Constants for preprocessing - should match training
 IMG_HEIGHT = 256
 IMG_WIDTH = 256
-# Minimum contour area to consider for cropping (adjust as needed)
+
 MIN_CONTOUR_AREA = 100 
 
 def parse_args() -> argparse.Namespace:
@@ -144,6 +144,7 @@ def postprocess_and_save_results(
 
     # --- 1. Process and Save Mask ---
     print("Processing predicted mask...")
+    # Resize probability mask back to original image size
     try:
         resized_prob_mask = cv2.resize(
             prob_mask_pred, (orig_width, orig_height), interpolation=cv2.INTER_LINEAR
@@ -175,7 +176,7 @@ def postprocess_and_save_results(
 
     # --- 2. Find Contour and Crop Original Image ---
     print("Finding largest contour for cropping...")
-    # RETR_EXTERNAL finds only outer contours, CHAIN_APPROX_SIMPLE saves memory
+    # Find contours in the *binary* mask
     contours, hierarchy = cv2.findContours(
         binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
@@ -227,17 +228,19 @@ def main():
     # --- Load Model ---
     print(f"Loading model from {args.model} ...")
     # Define the custom objects potentially needed by this specific model file
-    # ** Edit this dictionary based on the model being loaded **
     required_custom_objects = {
          "dice_loss": dice_loss,
          "dice_coef": dice_coef
+         # Add iou_loss or iou_coef if the specific model used them
     }
     print(f"Using custom_objects for load_model: {list(required_custom_objects.keys())}")
 
     try:
+        # Load model with compile=False for inference
         model = load_model(args.model, custom_objects=required_custom_objects, compile=False)
         print("Model loaded successfully.")
     except Exception as e:
+        # Improved error message guidance
         print(f"\n--- Error loading model ---")
         print(f"{e}")
         print("\nTroubleshooting:")
@@ -271,7 +274,7 @@ def main():
         orig_h,
         orig_w,
         args.output_mask,
-        args.output_cropped, 
+        args.output_cropped,
         args.threshold,
         args.min_area
     )

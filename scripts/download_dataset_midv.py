@@ -41,7 +41,6 @@ PATH_OFFSET_500 = 40      # for ftp://smartengines.com/midv-500/dataset/...
 PATH_OFFSET_2019 = 56     # for ftp://smartengines.com/midv-500/extra/midv-2019/dataset/...
 
 
-
 def read_image(img_path: str, label_path: str):
     """
     Loads an image (via OpenCV), builds a binary mask based on

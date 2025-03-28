@@ -37,7 +37,6 @@ try:
 except ImportError as e:
     print(f"Warning: Could not import custom objects from utils: {e}")
     print("Proceeding without them. If the model requires custom objects, loading will fail.")
-    # Define placeholders if imports fail, load_model will error later if they were needed
     dice_loss = iou_loss = jaccard_loss = dice_coef = iou_coef = None
 
 # Suppress TensorFlow INFO/WARNING messages
@@ -71,19 +70,28 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Explicitly enable float16 quantization."
     )
+    # Add more arguments here for other quantization modes (e.g., int8) if needed
+    # parser.add_argument("--int8", action="store_true", help="Enable INT8 quantization (requires representative dataset).")
 
     return parser.parse_args()
 
 def main():
     args = parse_args()
+
+    # --- Validate Input ---
     if not os.path.isfile(args.input_model):
         print(f"Error: Input model file not found -> {args.input_model}")
         sys.exit(1)
 
+    # --- Define Custom Objects ---
+    # ** Edit this dictionary based on the loss/metrics used to train the specific input model **
+    # Only include objects that were actually used during model.compile()
     required_custom_objects: Dict[str, Any] = {
         "dice_loss": dice_loss,
         "dice_coef": dice_coef
+        # Add/remove others like iou_loss, iou_coef as needed
     }
+    # Filter out any objects that failed to import
     required_custom_objects = {k: v for k, v in required_custom_objects.items() if v is not None}
     print(f"Using custom_objects for loading Keras model: {list(required_custom_objects.keys())}")
 
@@ -128,7 +136,7 @@ def main():
             # Ensure default optimizations aren't conflicting if both flags are set
             # (Usually DEFAULT includes float16 where possible, but this makes it explicit)
             if tf.lite.Optimize.DEFAULT not in optimizations:
-                 converter.optimizations = optimizations # Apply if not already done
+                 converter.optimizations = optimizations
             converter.target_spec.supported_types = [tf.float16]
 
         # Add INT8 quantization logic here if needed (requires representative dataset)

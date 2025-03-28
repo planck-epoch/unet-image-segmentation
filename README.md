@@ -27,14 +27,32 @@
 
 ## Overview
 
-Welcome to one-stop shop for `U-Net` semantic segmentation with `TensorFlow`.
+Welcome to this **one-stop shop** for `U-Net` semantic segmentation with `TensorFlow`.
 
-This project implements a robust pipeline inspired by the original U-Net ([Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597)) capable of separating foreground objects from the background pixel by pixel. 
+This project implements a robust pipeline inspired by the original U-Net ([Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597)) capable of separating foreground objects from the background pixel by pixel. The primary application driving its development was the segmentation of identity documents (like `passport`) for downstream processing such as OCR and identity verification (e.g., with [Regula Forensics](https://regulaforensics.com/id-verification)).
 
-The primary application driving its development was the segmentation of identity documents (like `ID cards`) for downstream processing such as OCR and data validation (e.g., with [Regula SDK](https://regulaforensics.com/id-verification)). 
+Futhermore this implementation allows easy adaptation for diverse segmentation tasks across different domains (medical, satellite, etc.). Please consider this repository a strong starting point and learning tool; although based on concepts proven effective in production environments, it is **not** provided as a finalized solution.
 
-However, the flexible design allows easy adaptation for diverse segmentation tasks across different domains (medical, satellite, etc.). Please consider this repository a strong starting point and learning tool; although based on production-proven implementation, it is not provided as a finalized, production-ready application.
+### Example Result (Light Training)
 
+To illustrate this model capability even with minimal training (e.g., just 10 epochs on a relevant dataset) here's a sample inference result showing the predicted mask and the subsequent cropping of the ID card from the original image:
+
+<table>
+  <tr>
+    <td align="center"><b>1. Predicted Segmentation Mask</b></td>
+    <td align="center"><b>2. Resulting Cropped Object</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/planck-epoch/unet-image-segmentation/main/samples/usage/portugal_id_card/output_mask.png" alt="Predicted Mask" width="300"></td>
+    <td><img src="https://raw.githubusercontent.com/planck-epoch/unet-image-segmentation/main/samples/usage/portugal_id_card/output_pred.png" alt="Cropped ID Card" width="300"></td>
+    </tr>
+  <tr>
+    <td align="center"><i>The segmentation output from the model,<br>highlighting the predicted ID card pixels.</i></td>
+    <td align="center"><i>The original image cropped using the<br>bounding box of the predicted mask.</i></td>
+  </tr>
+</table>
+
+This demonstrates the potential for accurately locating and isolating objects like ID cards which is a crutial step for many automated verification or data extraction workflows.
 
 ## Fetures
 

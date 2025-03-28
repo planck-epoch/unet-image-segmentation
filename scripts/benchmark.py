@@ -45,16 +45,11 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from glob import glob
 
-# --- Project Setup ---
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(PROJECT_ROOT)
-
-# Import custom objects potentially needed by the loaded model
 from utils.loss import dice_loss, iou_loss, jaccard_loss
 from utils.metrics import dice_coef, iou_coef
-# --- End Setup ---
 
-# Constants
 IMG_HEIGHT = 256
 IMG_WIDTH = 256
 # Use a small epsilon for manual IoU calculation stability
@@ -145,9 +140,7 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
 
         mask = np.zeros((orig_h, orig_w), dtype=np.uint8) # Start with 0
 
-        if quad: # Check if quad list is not empty
-            # Convert points to integer format required by drawContours
-            # Use raw points, approxPolyDP seemed too aggressive
+        if quad: 
             points = np.array(quad, dtype=np.int32)
             # Ensure shape is (N, 1, 2) for drawContours
             if points.ndim == 2:
@@ -161,12 +154,9 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
                 # Continue with potentially empty mask
 
         # Resize to target size (e.g., 256x256)
-        # Use INTER_NEAREST for binary masks to avoid intermediate values
         mask_resized = cv2.resize(mask, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
-
         # Ensure values are 0 or 1 (resize might introduce noise if not INTER_NEAREST)
         mask_binary = (mask_resized > 128).astype(np.uint8) # Threshold just in case
-
         # Add batch and channel dims -> (1, H, W, 1)
         return np.expand_dims(mask_binary, axis=[0, -1])
 
@@ -215,7 +205,6 @@ def main():
 
     # --- Load Model ---
     print(f"Loading model: {args.model} ...")
-    # ** Edit this dictionary based on the model being loaded **
     required_custom_objects = {
          "dice_loss": dice_loss,
          "dice_coef": dice_coef
@@ -289,9 +278,7 @@ def main():
         mask_pred_binary = (mask_pred_prob > args.pred_threshold).astype(np.uint8)
 
         # --- Calculate Sample IoU for Logging ---
-        # Use temporary metric or manual calculation for *this sample only*
-        # Using manual calculation helper function:
-        sample_iou = calculate_sample_iou(mask_true_tensor[0], mask_pred_binary[0]) # Pass single masks
+        sample_iou = calculate_sample_iou(mask_true_tensor[0], mask_pred_binary[0])
         
         if sample_iou < args.iou_threshold:
              low_iou_files.append((file_id, sample_iou))

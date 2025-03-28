@@ -44,7 +44,7 @@ However, the flexible design allows easy adaptation for diverse segmentation tas
 
 - `scripts/prepare_dataset.py`: Splits raw labeled data (`images` + `masks`) into `train`/`validation` sets formatted for Keras `ImageDataGenerator`.
 
-### U-Net Model (`model/u_net.py`):
+### U-Net Model
 
 - Implements the standard U-Net architecture with skip connections.
 
@@ -52,7 +52,7 @@ However, the flexible design allows easy adaptation for diverse segmentation tas
 
 - Configurable for binary (by default) but can be extend to multi-class segmentation.
 
-### Training Pipeline (`scripts/train.py`):
+### Training Pipeline
 
 - Configurable hyperparameters (epochs, batch size, learning rate).
 
@@ -72,13 +72,13 @@ However, the flexible design allows easy adaptation for diverse segmentation tas
 
 - Includes optional cropping of the original image based on the largest contour found in the predicted mask (`utils/image.py`).
 
-### Evaluation (`scripts/benchmark.py`):
+### Evaluation
 
 - Calculates the overall `MeanIoU` for a model on a dataset (using JSON polygon ground truth).
 
 - Identifies and logs images performing below a specified `IoU` threshold.
 
-### Environment Checks:
+### Environment Checks
 
 - `scripts/check_tf_install.py`: Verifies basic TensorFlow/Keras installation and device detection.
 

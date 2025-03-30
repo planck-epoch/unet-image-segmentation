@@ -1,9 +1,7 @@
 from tensorflow.keras import backend as K
 import tensorflow as tf
 
-# small epsilon value for smoothing to avoid division by zero
 SMOOTH = K.epsilon()
-
 
 def dice_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> tf.Tensor:
     """
@@ -25,32 +23,20 @@ def dice_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> t
     Returns:
         tf.Tensor: The mean Dice coefficient (scalar tensor).
     """
-    # Ensure inputs are float type
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)
-
     # Sum over spatial dimensions (Height, Width) -> (batch, channels)
     # Assuming channels_last format (batch, H, W, C)
     axis_to_sum = [1, 2]
-
-    # Intersection: Sum of element-wise multiplication over spatial axes
     intersection = tf.reduce_sum(y_true * y_pred, axis=axis_to_sum)
-
-    # Calculate sums of ground truth and predictions over spatial axes
     sum_true = tf.reduce_sum(y_true, axis=axis_to_sum)
     sum_pred = tf.reduce_sum(y_pred, axis=axis_to_sum)
-
-    # Calculate Dice coefficient score for each sample/channel with smoothing
     # Dice_Score = (2 * Intersection + Smooth) / (Sum(True) + Sum(Pred) + Smooth)
     numerator = 2. * intersection + smooth
     denominator = sum_true + sum_pred + smooth
-    dice_score = numerator / denominator # Shape: (batch, channels)
-
-    # --- Calculate the mean over the batch and channels ---
+    dice_score = numerator / denominator
     mean_dice_score = tf.reduce_mean(dice_score)
-    # ----------------------------------------------------
-
-    return mean_dice_score # Return the final scalar mean value
+    return mean_dice_score
 
 def iou_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> tf.Tensor:
     """
@@ -68,20 +54,9 @@ def iou_coef(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> tf
     """
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)
-
-    # Intersection: Sum over spatial dimensions (H, W) for each sample/channel
-    # Keep batch and channel dims
     intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2])
-
-    # Sums for Union: Sum over spatial dimensions (H, W)
     sum_true = tf.reduce_sum(y_true, axis=[1, 2])
     sum_pred = tf.reduce_sum(y_pred, axis=[1, 2])
-
-    # Union = Sum(y_true) + Sum(y_pred) - Intersection
     union = sum_true + sum_pred - intersection
-
-    # IoU = (Intersection + Smooth) / (Union + Smooth) per sample/channel
     iou = (intersection + smooth) / (union + smooth)
-
-    # Return the mean IoU score across the batch and channels
     return tf.reduce_mean(iou)

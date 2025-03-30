@@ -51,29 +51,23 @@ import tensorflow as tf
 import sys
 from typing import Optional
 
-# Add project root to sys.path for module imports
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-# Keras / TF imports
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, TensorBoard
 from tensorflow.keras.optimizers import AdamW
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.metrics import MeanIoU
 
-# Project-specific imports
 from model.u_net import U_NET
 from utils.loss import dice_loss
 from utils.metrics import dice_coef
 
-# Suppress TensorFlow INFO/WARNING messages
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 tf.get_logger().setLevel('ERROR')
 print(f"Using TensorFlow version: {tf.__version__}")
 
-
-# Default parameters for training
 DEFAULT_EPOCHS = 30
 DEFAULT_BATCHSIZE = 2
 DEFAULT_LR = 2e-3
@@ -82,18 +76,16 @@ DEFAULT_MODEL_OUT = "./models/model.h5"
 
 SEED = 2301
 
-# Expected data directories relative to project root
 TRAIN_FRAMES_DIR = "dataset/train/train_frames/image"
 TRAIN_MASKS_DIR = "dataset/train/train_masks/image"
 VAL_FRAMES_DIR = "dataset/train/val_frames/image"
 VAL_MASKS_DIR = "dataset/train/val_masks/image"
 
-# Model input/output dimensions
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 IMAGE_CHANNELS = 3
 MODEL_INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
-TARGET_SIZE = (IMAGE_HEIGHT, IMAGE_WIDTH) # For data generators
+TARGET_SIZE = (IMAGE_HEIGHT, IMAGE_WIDTH)
 
 NUM_CLASSES = 1
 
@@ -133,10 +125,8 @@ def fix_gpu():
                 tf.config.experimental.set_memory_growth(gpu, True)
             print(f"Enabled memory growth for {len(gpus)} GPU(s).")
         else:
-            # This is not an error, TF will use CPU.
             print("No GPU detected by TensorFlow. Training will use CPU.")
     except Exception as e:
-        # Allows execution to continue on CPU if GPU config fails
         print(f"GPU configuration warning (continuing with CPU or default GPU settings): {e}")
 
 def combine_generators(image_gen, mask_gen):
@@ -145,7 +135,6 @@ def combine_generators(image_gen, mask_gen):
         try:
             yield (next(image_gen), next(mask_gen))
         except StopIteration:
-            # Should not happen if generators are set to repeat or run for enough steps
             print("Warning: Data generator exhausted unexpectedly.")
             return
 
@@ -153,7 +142,6 @@ def main():
     """ Main function to run the training pipeline. """
     args = parse_args()
 
-    # Seed everything for reproducibility
     rn.seed(SEED)
     np.random.seed(SEED)
     tf.random.set_seed(SEED)
@@ -164,9 +152,9 @@ def main():
     WEIGHT_DECAY = args.weight_decay
     MODEL_OUT = args.model_out
 
-    fix_gpu() # Attempt to configure GPU memory growth
-
-    # Log configuration
+    # Attempt to configure GPU memory growth
+    fix_gpu()
+    
     print(f"\n--- Training Configuration ---")
     print(f"Epochs        : {EPOCHS}")
     print(f"Batch Size    : {BATCH_SIZE}")
@@ -178,8 +166,6 @@ def main():
     print(f"Seed          : {SEED}")
     print(f"------------------------------\n")
 
-    # --- Data Augmentation & Generators ---
-    # Simple augmentation for training data
     train_data_gen_args = dict(
         rescale=1.0/255.0,
         horizontal_flip=True,
@@ -198,7 +184,6 @@ def main():
         val_img_datagen = ImageDataGenerator(**val_data_gen_args)
         val_mask_datagen = ImageDataGenerator(**val_data_gen_args)
 
-        # Flow data from directories
         train_image_generator = train_img_datagen.flow_from_directory(
             directory=os.path.dirname(TRAIN_FRAMES_DIR), classes=[os.path.basename(TRAIN_FRAMES_DIR)],
             target_size=TARGET_SIZE, batch_size=BATCH_SIZE, class_mode=None, color_mode="rgb", seed=SEED,
@@ -231,13 +216,10 @@ def main():
         print("-------------------------------------------\n")
         sys.exit(1)
 
-    # Combine generators
     train_generator = combine_generators(train_image_generator, train_mask_generator)
     val_generator = combine_generators(val_image_generator, val_mask_generator)
 
-    # --- Build and Compile Model ---
     print("Building U-Net model...")
-    # Instantiate the U-Net model (ensure model/u_net.py exists and is correct)
     model = U_NET(input_size=MODEL_INPUT_SHAPE, num_classes=NUM_CLASSES)
 
     print("Compiling model with AdamW optimizer and Dice loss...")
@@ -250,9 +232,8 @@ def main():
             dice_coef 
         ]
     )
-    model.summary(line_length=100) # Print model structure
+    model.summary(line_length=100)
 
-    # --- Calculate Steps per Epoch ---
     try:
         # Use the .samples attribute from the generators (more reliable)
         no_of_training_images = train_image_generator.samples
@@ -269,7 +250,6 @@ def main():
             print(f"Error counting files: {fe}. Please check dataset paths.")
             sys.exit(1)
 
-    # Basic check for data existence
     if no_of_training_images == 0 or no_of_val_images == 0:
         print("Error: No training or validation images found/loaded. Check dataset paths and contents.")
         sys.exit(1)
@@ -283,29 +263,24 @@ def main():
     if no_of_val_images < BATCH_SIZE:
          print(f"Warning: Validation dataset size ({no_of_val_images}) < batch size ({BATCH_SIZE}).")
 
-
-    # --- Callbacks ---
-    # Define which validation metric to monitor for checkpointing and LR reduction
     monitor_metric = 'val_mean_io_u' # Common choices: 'val_mean_io_u', 'val_dice_coef', 'val_loss'
-    monitor_mode = 'max' if 'loss' not in monitor_metric else 'min' # Adjust mode based on metric
+    monitor_mode = 'max' if 'loss' not in monitor_metric else 'min'
     print(f"Setting up Callbacks - Monitoring: '{monitor_metric}' (mode: {monitor_mode})")
 
-    # Ensure output directory for model checkpoint exists
     model_dir = os.path.dirname(MODEL_OUT)
     if model_dir:
         os.makedirs(model_dir, exist_ok=True)
         print(f"Ensured model save directory exists: {model_dir}")
 
-    # Saves the best model based on the monitored metric
     checkpoint = ModelCheckpoint(
         filepath=MODEL_OUT,
         monitor=monitor_metric,
         mode=monitor_mode,
         save_best_only=True,
-        save_weights_only=False, # Save the full model structure + weights
+        save_weights_only=False,
         verbose=1
     )
-    # Stops training early if the monitored metric doesn't improve
+    
     early_stopping = EarlyStopping(
         monitor=monitor_metric,
         patience=10,
@@ -313,7 +288,7 @@ def main():
         restore_best_weights=True, 
         verbose=1
     )
-    # Reduces learning rate if the monitored metric plateaus
+    
     reduce_lr = ReduceLROnPlateau(
         monitor=monitor_metric,
         factor=0.2,
@@ -322,15 +297,14 @@ def main():
         min_lr=1e-6, 
         verbose=1
     )
-    # Logs training data for TensorBoard visualization
+
     log_dir = os.path.join("./logs", time.strftime("%Y%m%d_%H%M%S"))
     os.makedirs(log_dir, exist_ok=True)
     print(f"TensorBoard logs will be saved to: {log_dir}")
-    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1) # Log histograms once per epoch
+    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     callbacks_list = [checkpoint, early_stopping, reduce_lr, tensorboard]
 
-    # --- Train Model ---
     print(f"\n--- Starting Training ({EPOCHS} epochs) ---")
     try:
         history = model.fit(
@@ -343,7 +317,6 @@ def main():
             verbose=1 # 1 = progress bar, 2 = one line per epoch
         )
         print("\n--- Training complete ---")
-        # Report best score achieved
         best_score = np.inf if monitor_mode == 'min' else -np.inf
         stopped_epoch = EPOCHS
         

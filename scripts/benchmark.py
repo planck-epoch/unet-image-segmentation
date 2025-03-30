@@ -89,7 +89,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--low_score_log",
         type=str,
-        default=None, # Optional: path to save low IoU filenames
+        default=None,
         help="Optional file path to save the list of files scoring below the iou_threshold."
     )
     return parser.parse_args()
@@ -102,10 +102,8 @@ def load_image_for_predict(img_path: str) -> Optional[np.ndarray]:
         if img_bgr is None:
             print(f"Warning: Could not read image: {img_path}. Skipping.")
             return None
-
         # Normalize to [0, 1]
         img_norm = img_bgr.astype(np.float32) / 255.0
-        # Resize
         img_resized = cv2.resize(img_norm, (IMG_WIDTH, IMG_HEIGHT), interpolation=cv2.INTER_LINEAR)
         # Add batch dim -> (1, H, W, 3)
         return np.expand_dims(img_resized, axis=0)
@@ -143,28 +141,19 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
 
         mask = np.zeros((orig_h, orig_w), dtype=np.uint8) # Start with 0
 
-        if quad: # Check if quad list is not empty
-            # Convert points to integer format required by drawContours
-            # Use raw points, approxPolyDP seemed too aggressive
+        if quad:
             points = np.array(quad, dtype=np.int32)
-            # Ensure shape is (N, 1, 2) for drawContours
             if points.ndim == 2:
                  points = points.reshape((-1, 1, 2))
             
             try:
-                # Draw filled polygon (value 255)
                 cv2.drawContours(mask, [points], contourIdx=-1, color=255, thickness=cv2.FILLED)
             except Exception as e:
                 print(f"Warning: drawContours failed for {json_path} (Points: {points.shape}). Error: {e}. Mask might be empty.")
                 # Continue with potentially empty mask
 
-        # Resize to target size (e.g., 256x256)
-        # Use INTER_NEAREST for binary masks to avoid intermediate values
         mask_resized = cv2.resize(mask, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
-
-        # Ensure values are 0 or 1 (resize might introduce noise if not INTER_NEAREST)
-        mask_binary = (mask_resized > 128).astype(np.uint8) # Threshold just in case
-
+        mask_binary = (mask_resized > 128).astype(np.uint8)
         # Add batch and channel dims -> (1, H, W, 1)
         return np.expand_dims(mask_binary, axis=[0, -1])
 
@@ -177,8 +166,8 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
 
 def calculate_sample_iou(y_true_sample: np.ndarray, y_pred_sample: np.ndarray, smooth: float = SMOOTH) -> float:
      """ Calculates IoU for a single sample (H, W, 1) or (H, W). """
-     y_true = tf.cast(y_true_sample.squeeze(), tf.float32) # Ensure 2D
-     y_pred = tf.cast(y_pred_sample.squeeze(), tf.float32) # Ensure 2D
+     y_true = tf.cast(y_true_sample.squeeze(), tf.float32)
+     y_pred = tf.cast(y_pred_sample.squeeze(), tf.float32)
      
      intersection = tf.reduce_sum(y_true * y_pred)
      sum_true = tf.reduce_sum(y_true)
@@ -186,14 +175,13 @@ def calculate_sample_iou(y_true_sample: np.ndarray, y_pred_sample: np.ndarray, s
      union = sum_true + sum_pred - intersection
      
      iou = (intersection + smooth) / (union + smooth)
-     return float(iou.numpy()) # Return as Python float
+     return float(iou.numpy())
 
 
 def main():
     args = parse_args()
     start_time = time.time()
 
-    # --- Validate Paths ---
     if not os.path.isdir(args.input_dir):
         print(f"Error: Input directory not found -> {args.input_dir}")
         sys.exit(1)
@@ -212,7 +200,6 @@ def main():
          print(f"Error: IoU threshold must be between 0.0 and 1.0 -> {args.iou_threshold}")
          sys.exit(1)
 
-    # --- Load Model ---
     print(f"Loading model: {args.model} ...")
     # Define custom objects *required* by the specific saved model file
     # ** Edit this dictionary based on the model being loaded **
@@ -232,7 +219,6 @@ def main():
         print("---------------------------\n")
         sys.exit(1)
 
-    # --- Find Data Pairs ---
     print("Finding image and ground truth pairs...")
     image_files = sorted(glob(os.path.join(images_root, "**", "*.tif"), recursive=True))
     print(f"Found {len(image_files)} '.tif' images.")
@@ -242,7 +228,6 @@ def main():
     skipped_count = 0
 
     for img_path in image_files:
-        # Construct expected JSON path
         relative_path = os.path.relpath(img_path, images_root)
         base_name = os.path.splitext(relative_path)[0]
         json_path = os.path.join(gtruth_root, base_name + ".json")
@@ -260,11 +245,9 @@ def main():
          
     print(f"Prepared {len(data_pairs)} image/JSON pairs for evaluation ({skipped_count} images skipped).")
 
-    # --- Initialize Metrics ---
     iou_metric = tf.keras.metrics.MeanIoU(num_classes=2, name="overall_mean_iou")
     low_iou_files: List[Tuple[str, float]] = []
 
-    # --- Evaluation Loop ---
     print(f"Evaluating model (Prediction Threshold: {args.pred_threshold:.2f})...")
     for i, pair in enumerate(data_pairs):
         img_path = pair["image"]
@@ -272,37 +255,27 @@ def main():
         file_id = pair["id"]
         
         print(f"\rProcessing [{i+1}/{len(data_pairs)}]: {file_id}", end="")
-
-        # Load data
         img_tensor = load_image_for_predict(img_path)
         mask_true_tensor = build_mask_from_quad(json_path, IMG_HEIGHT, IMG_WIDTH)
 
         if img_tensor is None or mask_true_tensor is None:
             print(f"\nSkipping pair due to loading error: {file_id}")
             continue
-
-        # Predict
+        
         mask_pred_prob = model.predict(img_tensor, verbose=0) # Shape (1, H, W, 1)
 
         if mask_pred_prob is None:
              print(f"\nSkipping pair due to prediction error: {file_id}")
              continue
 
-        # Threshold prediction to get binary mask (0 or 1)
         mask_pred_binary = (mask_pred_prob > args.pred_threshold).astype(np.uint8)
 
-        # --- Calculate Sample IoU for Logging ---
-        # Use temporary metric or manual calculation for *this sample only*
-        # Using manual calculation helper function:
-        sample_iou = calculate_sample_iou(mask_true_tensor[0], mask_pred_binary[0]) # Pass single masks
+        sample_iou = calculate_sample_iou(mask_true_tensor[0], mask_pred_binary[0])
         
         if sample_iou < args.iou_threshold:
              low_iou_files.append((file_id, sample_iou))
-             # Optionally print immediately
              # print(f"\nBelow threshold (IoU={sample_iou:.3f}): {file_id}")
 
-        # --- Update Overall Metric ---
-        # update_state expects labels (y_true) then predictions (y_pred)
         try:
              iou_metric.update_state(mask_true_tensor, mask_pred_binary)
         except Exception as e:
@@ -312,7 +285,6 @@ def main():
 
     print("\nEvaluation complete.")
 
-    # --- Report Results ---
     final_mean_iou = iou_metric.result().numpy()
     print(f"\n{'='*30}")
     print(f"Overall Mean IoU: {final_mean_iou:.4f}")
@@ -320,12 +292,11 @@ def main():
 
     if low_iou_files:
         print(f"\nFiles scoring below IoU threshold ({args.iou_threshold:.2f}):")
-        # Sort by IoU score (ascending)
+        
         low_iou_files.sort(key=lambda item: item[1])
         for file_id, score in low_iou_files:
             print(f"  - IoU: {score:.4f} | File: {file_id}")
             
-        # Save low scores to file if requested
         if args.low_score_log:
              print(f"\nSaving low score list to: {args.low_score_log}")
              try:

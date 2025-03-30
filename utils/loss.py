@@ -3,9 +3,8 @@ from tensorflow.keras import backend as K
 from typing import Callable
 from .metrics import dice_coef
 
-# small epsilon value for smoothing to avoid division by zero
-SMOOTH = K.epsilon()
 
+SMOOTH = K.epsilon()
 
 def dice_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     """
@@ -25,12 +24,7 @@ def dice_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     """
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)
-
-    # Calculate Dice coefficient using the imported function
-    # Ensure dice_coef handles reduction correctly (e.g., returns mean over batch)
-    dice_coefficient = dice_coef(y_true, y_pred) # Assumes it uses appropriate smoothing
-
-    # Dice loss is 1 minus the coefficient
+    dice_coefficient = dice_coef(y_true, y_pred)
     loss = 1.0 - dice_coefficient
     return loss
 
@@ -46,10 +40,7 @@ def iou_loss(y_true: tf.Tensor, y_pred: tf.Tensor, smooth: float = SMOOTH) -> tf
     Returns:
         tf.Tensor: The calculated IoU loss (scalar).
     """
-    # Calculate IoU coefficient
     iou_coefficient = iou_coef(y_true, y_pred, smooth=smooth)
-
-    # IoU loss is 1 minus the coefficient
     loss = 1.0 - iou_coefficient
     return loss
 

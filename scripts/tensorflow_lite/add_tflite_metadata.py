@@ -39,7 +39,6 @@ import sys
 import tensorflow as tf
 from typing import List, Optional, Sequence, Union
 
-# Ensure tflite-support is installed: pip install tflite-support
 try:
     import flatbuffers
     from tflite_support import metadata_schema_py_generated as _metadata_fb
@@ -53,7 +52,6 @@ except ImportError:
     print("="*70)
     sys.exit(1)
 
-# Suppress TensorFlow INFO/WARNING messages
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 tf.get_logger().setLevel('ERROR')
 
@@ -115,7 +113,6 @@ def parse_args() -> argparse.Namespace:
         help="Path to the label file (e.g., labels.txt). Required for multi-class "
              "segmentation if associating labels with output tensor."
     )
-    # Normalization parameters MUST match model training and inference preprocessing
     parser.add_argument(
         "--input_norm_mean",
         type=float,
@@ -132,7 +129,6 @@ def parse_args() -> argparse.Namespace:
         help="Standard deviation value(s) used for input normalization (e.g., [1.0] for [0,1] scaling, "
              "[127.5] or [127.5, 127.5, 127.5] for [-1,1] scaling)."
     )
-    # Input tensor range (before normalization) - typically 0-255 for uint8 input
     parser.add_argument(
         "--input_min", type=int, default=0, help="Minimum expected input tensor value before normalization."
     )
@@ -174,7 +170,6 @@ class MetadataPopulatorForSegmentation:
         self.label_file_path = label_file_path
         self.metadata_buf = None
 
-        # --- Get tensor details from model ---
         self._get_tensor_details()
 
     def _get_tensor_details(self):
@@ -197,7 +192,6 @@ class MetadataPopulatorForSegmentation:
         print(f"Output Name: {self.output_detail['name']} | Shape: {self.output_detail['shape']} | Type: {self.output_detail['dtype']}")
         print("-----------------------------\n")
 
-        # Extract required info (e.g., dimensions) - assuming NHWC format
         try:
              self.input_height = int(self.input_detail['shape'][1])
              self.input_width = int(self.input_detail['shape'][2])
@@ -216,7 +210,6 @@ class MetadataPopulatorForSegmentation:
         model_meta.author = self.author
         model_meta.license = self.license_type
 
-        # --- Input Tensor Info ---
         input_meta = _metadata_fb.TensorMetadataT()
         input_meta.name = self.input_detail["name"]
         input_meta.description = (
@@ -228,22 +221,19 @@ class MetadataPopulatorForSegmentation:
         input_meta.content.contentProperties.colorSpace = _metadata_fb.ColorSpaceType.RGB
         input_meta.content.contentPropertiesType = _metadata_fb.ContentProperties.ImageProperties
 
-        # Normalization Process Unit
         input_normalization = _metadata_fb.ProcessUnitT()
         input_normalization.optionsType = _metadata_fb.ProcessUnitOptions.NormalizationOptions
         input_normalization.options = _metadata_fb.NormalizationOptionsT()
-        # Ensure mean/std match expected number of channels if needed (often 1 value is broadcast)
+
         input_normalization.options.mean = self.input_norm_mean
         input_normalization.options.std = self.input_norm_std
         input_meta.processUnits = [input_normalization]
 
-        # Input Stats (Range before normalization)
         input_stats = _metadata_fb.StatsT()
         input_stats.max = [float(self.input_max)]
         input_stats.min = [float(self.input_min)]
         input_meta.stats = input_stats
 
-        # --- Output Tensor Info ---
         output_meta = _metadata_fb.TensorMetadataT()
         output_meta.name = self.output_detail["name"]
         
@@ -269,7 +259,6 @@ class MetadataPopulatorForSegmentation:
         output_meta.content.contentProperties.colorSpace = _metadata_fb.ColorSpaceType.GRAYSCALE if self.num_output_classes == 1 else _metadata_fb.ColorSpaceType.UNKNOWN # Or RGB if channels=3? Needs context.
         output_meta.content.contentPropertiesType = _metadata_fb.ContentProperties.ImageProperties
         
-        # Output Stats (Range after activation)
         output_stats = _metadata_fb.StatsT()
         output_stats.max = [1.0]
         output_stats.min = [0.0]
@@ -295,13 +284,11 @@ class MetadataPopulatorForSegmentation:
                  # output_meta.content.range.min = 0
                  # output_meta.content.range.max = self.num_output_classes - 1
 
-        # --- Subgraph Info ---
         subgraph = _metadata_fb.SubGraphMetadataT()
         subgraph.inputTensorMetadata = [input_meta]
         subgraph.outputTensorMetadata = [output_meta]
         model_meta.subgraphMetadata = [subgraph]
 
-        # --- Build Flatbuffer ---
         builder = flatbuffers.Builder(0)
         builder.Finish(
             model_meta.Pack(builder),
@@ -333,7 +320,6 @@ class MetadataPopulatorForSegmentation:
 def main():
     args = parse_args()
 
-    # --- Validate Paths ---
     if not os.path.isfile(args.model_file):
         print(f"Error: Input TFLite model not found -> {args.model_file}")
         sys.exit(1)
@@ -345,16 +331,12 @@ def main():
          print(f"Error: Export directory must be specified.")
          sys.exit(1)
 
-    # Create export directory if it doesn't exist
     os.makedirs(args.export_directory, exist_ok=True)
     print(f"Ensured export directory exists: {args.export_directory}")
 
-    # Define the final export path for the model with metadata
     model_basename = os.path.basename(args.model_file)
     export_model_path = os.path.join(args.export_directory, model_basename)
 
-    # --- Copy Model to Export Directory ---
-    # Metadata is written directly into the file, so work on a copy
     print(f"Copying original model to export location: {export_model_path}")
     try:
         tf.io.gfile.copy(args.model_file, export_model_path, overwrite=True)
@@ -362,7 +344,6 @@ def main():
         print(f"Error copying model file: {e}")
         sys.exit(1)
 
-    # --- Populate Metadata ---
     try:
         print("Initializing metadata populator...")
         populator = MetadataPopulatorForSegmentation(
@@ -391,19 +372,15 @@ def main():
         print("\nValidating model metadata...")
         displayer = _metadata.MetadataDisplayer.with_model_file(export_model_path)
 
-        # Display metadata summary
         print("--- Metadata Summary ---")
         print(displayer.get_metadata_json())
         print("-----------------------")
 
-        # Display associated files
         print("Packed Associated Files:")
         print(displayer.get_packed_associated_file_list())
         print("-----------------------")
 
-        # Save metadata JSON file
-        export_json_file = os.path.join(args.export_directory,
-                                        os.path.splitext(model_basename)[0] + "_metadata.json")
+        export_json_file = os.path.join(args.export_directory, os.path.splitext(model_basename)[0] + "_metadata.json")
         metadata_json = displayer.get_metadata_json()
         print(f"Saving metadata JSON to: {export_json_file}")
         with open(export_json_file, "w") as f:

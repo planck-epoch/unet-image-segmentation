@@ -19,12 +19,10 @@ import shutil
 import random
 import numpy as np
 
-
 from glob import glob
 from PIL import Image
 import pydash as _
 
-# Import your link lists
 from midv_links import MIDV500_LINKS, MIDV2019_EXTRA_LINKS
 
 TARGET_PATH = "dataset/data/"
@@ -68,11 +66,8 @@ def read_image(img_path: str, label_path: str):
         cv2.COLOR_BGR2GRAY
     )
 
-    # Resize to half resolution (optional)
     mask = cv2.resize(mask, (mask.shape[1] // 2, mask.shape[0] // 2))
     image = cv2.resize(image, (image.shape[1] // 2, image.shape[0] // 2))
-
-    # Threshold
     mask = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY)[1]
     return "success", image, mask
 
@@ -153,12 +148,10 @@ def train_validation_split():
     """
     print("\n=== Splitting data into train/val/test sets ===")
 
-    # Remove old directory if it exists
     if os.path.exists(DATA_PATH):
         print(f"Removing old data directory: {DATA_PATH}")
         shutil.rmtree(DATA_PATH, ignore_errors=True)
 
-    # Create subfolders for each split
     folders = [
         "train_frames/image",
         "train_masks/image",
@@ -170,11 +163,9 @@ def train_validation_split():
     for folder in folders:
         os.makedirs(os.path.join(DATA_PATH, folder), exist_ok=True)
 
-    # Collect & sort frames/masks
     all_frames = sorted(os.listdir(TEMP_IMAGE_PATH), key=lambda x: int(re.findall(r'\d+', x)[0]))
     all_masks = sorted(os.listdir(TEMP_MASK_PATH), key=lambda x: int(re.findall(r'\d+', x)[0]))
 
-    # Shuffle frames (and implicitly masks) with the same seed
     random.seed(SEED)
     random.shuffle(all_frames)
 
@@ -186,7 +177,6 @@ def train_validation_split():
     val_frames = all_frames[train_split:val_split]
     test_frames = all_frames[val_split:]
 
-    # Filter mask filenames to match frames
     train_masks = [m for m in all_masks if m in train_frames]
     val_masks   = [m for m in all_masks if m in val_frames]
     test_masks  = [m for m in all_masks if m in test_frames]
@@ -199,7 +189,6 @@ def train_validation_split():
         Image.open(os.path.join(TEMP_MASK_PATH, filename)) \
              .save(os.path.join(DATA_PATH, dst_folder, filename))
 
-    # Distribute frames
     for fname in train_frames:
         copy_frame("train_frames/image", fname)
     for fname in val_frames:
@@ -207,7 +196,6 @@ def train_validation_split():
     for fname in test_frames:
         copy_frame("test_frames/image", fname)
 
-    # Distribute masks
     for mname in train_masks:
         copy_mask("train_masks/image", mname)
     for mname in val_masks:

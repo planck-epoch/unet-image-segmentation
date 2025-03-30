@@ -141,10 +141,8 @@ def postprocess_and_save_results(
     if prob_mask_pred is None or original_bgr is None:
         print("Error: Invalid input provided for postprocessing.")
         return
-
-    # --- 1. Process and Save Mask ---
     print("Processing predicted mask...")
-    # Resize probability mask back to original image size
+    
     try:
         resized_prob_mask = cv2.resize(
             prob_mask_pred, (orig_width, orig_height), interpolation=cv2.INTER_LINEAR
@@ -159,11 +157,8 @@ def postprocess_and_save_results(
     elif resized_prob_mask.ndim != 2:
         print(f"Error: Resized mask has unexpected dimensions: {resized_prob_mask.shape}")
         return
-
-    # Create binary mask (0 or 255) using the specified threshold
     binary_mask = (resized_prob_mask > binary_threshold).astype(np.uint8) * 255
-
-    # Save the binary mask
+    
     print(f"Saving binary mask to {output_mask_path} ...")
     mask_dir = os.path.dirname(output_mask_path)
     if mask_dir:
@@ -173,21 +168,17 @@ def postprocess_and_save_results(
              print(f"Warning: cv2.imwrite failed to save mask to {output_mask_path}")
     except Exception as e:
         print(f"Error saving binary mask: {e}")
-
-    # --- 2. Find Contour and Crop Original Image ---
+    
     print("Finding largest contour for cropping...")
-    # Find contours in the *binary* mask
     contours, hierarchy = cv2.findContours(
         binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
 
     if contours:
-        # Find the contour with the largest area
         largest_contour = max(contours, key=cv2.contourArea)
         area = cv2.contourArea(largest_contour)
 
         if area > min_contour_area:
-            # Get the bounding box (x, y, width, height) of the largest contour
             x, y, w, h = cv2.boundingRect(largest_contour)
 
             # Crop the *original BGR image* using the bounding box coordinates
@@ -195,7 +186,6 @@ def postprocess_and_save_results(
             print(f"Largest contour area: {area:.0f} > {min_contour_area:.0f}. Cropping region: (x={x}, y={y}, w={w}, h={h})")
             cropped_bgr = original_bgr[y : y + h, x : x + w]
 
-            # Save the cropped image
             print(f"Saving cropped image to {output_cropped_path} ...")
             crop_dir = os.path.dirname(output_cropped_path)
             if crop_dir:
@@ -214,7 +204,6 @@ def postprocess_and_save_results(
 def main():
     args = parse_args()
 
-    # --- Validate Inputs ---
     if not os.path.isfile(args.input):
         print(f"Error: Input image not found -> {args.input}")
         sys.exit(1)
@@ -225,9 +214,7 @@ def main():
          print(f"Error: Threshold must be between 0.0 and 1.0 -> {args.threshold}")
          sys.exit(1)
 
-    # --- Load Model ---
     print(f"Loading model from {args.model} ...")
-    # Define the custom objects potentially needed by this specific model file
     required_custom_objects = {
          "dice_loss": dice_loss,
          "dice_coef": dice_coef
@@ -236,11 +223,9 @@ def main():
     print(f"Using custom_objects for load_model: {list(required_custom_objects.keys())}")
 
     try:
-        # Load model with compile=False for inference
         model = load_model(args.model, custom_objects=required_custom_objects, compile=False)
         print("Model loaded successfully.")
     except Exception as e:
-        # Improved error message guidance
         print(f"\n--- Error loading model ---")
         print(f"{e}")
         print("\nTroubleshooting:")
@@ -253,20 +238,17 @@ def main():
         print("---------------------------\n")
         sys.exit(1)
 
-    # --- Preprocess Image ---
     print(f"Loading and preprocessing image: {args.input} ...")
     input_tensor, original_bgr, orig_h, orig_w = load_and_preprocess_image(
         args.input, IMG_HEIGHT, IMG_WIDTH
     )
     if input_tensor is None:
         sys.exit(1)
-
-    # --- Predict Mask ---
+        
     probability_mask = predict_mask(model, input_tensor)
     if probability_mask is None:
         sys.exit(1)
 
-    # --- Postprocess and Save ---
     print("Postprocessing results...")
     postprocess_and_save_results(
         probability_mask,

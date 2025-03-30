@@ -115,8 +115,6 @@ def main():
 
     os.makedirs(IMAGE_RESULT_DIR, exist_ok=True)
     os.makedirs(ANNOTATION_RESULT_DIR, exist_ok=True)
-
-    # Gather all input images and annotations
     img_list = sorted(glob.glob(IMPORT_FILES))
     label_list = sorted(glob.glob(ANNOTATION_DIR))
 
@@ -124,14 +122,12 @@ def main():
         print("Warning: The number of images and annotation files differ.")
         print(f"Images found: {len(img_list)}, Annotations found: {len(label_list)}")
         # sys.exit(1)
-        
-    # Process each (image, annotation) pair
+
     for i, (img_path, label_path) in enumerate(zip(img_list, label_list)):
         image, mask, coords = read_image(img_path, label_path)
         # e.g. "photo_001.jpg" -> "photo_001"
         filename = ntpath.basename(img_path).split('.')[0]
 
-        # Create subdirectories for the current file
         output_img_dir = os.path.join(IMAGE_RESULT_DIR, filename)
         output_annot_dir = os.path.join(ANNOTATION_RESULT_DIR, filename)
         os.makedirs(output_img_dir, exist_ok=True)
@@ -142,7 +138,7 @@ def main():
             if j == 0:
                 image_aug = image.copy()
                 mask_aug = mask.copy()
-                quad_info = {"quad": coords}  # original coords
+                quad_info = {"quad": coords}
             elif j == 1:
                 # Rotate 90° clockwise
                 image_aug = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
@@ -159,7 +155,6 @@ def main():
                 mask_aug = cv2.flip(mask, 1)
                 quad_info = rotate_and_extract_quad(mask_aug)
 
-            # Apply multiple blur/filters
             image_list = [
                 image_aug,
                 cv2.medianBlur(image_aug, 9),
@@ -167,17 +162,14 @@ def main():
                 cv2.blur(image_aug, (9, 9)),
             ]
 
-            # Write out each variant
             for k, variant_img in enumerate(image_list):
                 annot_name = f"{filename}_{i}_{j}_{k}.json"
                 img_name = f"{filename}_{i}_{j}_{k}.tif"
 
-                # Save annotation
                 annot_path = os.path.join(output_annot_dir, annot_name)
                 with open(annot_path, 'w') as outfile:
                     json.dump(quad_info, outfile)
 
-                # Save image
                 img_path_out = os.path.join(output_img_dir, img_name)
                 cv2.imwrite(img_path_out, variant_img)
 

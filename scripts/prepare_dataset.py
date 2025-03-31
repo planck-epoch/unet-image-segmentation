@@ -12,10 +12,6 @@ import pydash as _
 from matplotlib import pyplot as plt
 import ntpath
 
-# --------------------------------------------------------------------------------
-# Utility Functions
-# --------------------------------------------------------------------------------
-
 def read_image(img_path, label_path):
     """
     Reads an image and its corresponding JSON label (containing a 'quad' array).

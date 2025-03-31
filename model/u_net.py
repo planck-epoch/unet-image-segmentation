@@ -2,7 +2,6 @@ import tensorflow as tf
 from tensorflow.keras import layers, Model, Input
 from typing import Tuple
 
-# Helper function for convolutional blocks with naming
 def conv_block(input_tensor: tf.Tensor, 
                num_filters: int, 
                kernel_size: int = 3, 
@@ -12,12 +11,11 @@ def conv_block(input_tensor: tf.Tensor,
     Creates a convolutional block with SeparableConv2D, Batch Normalization, and ReLU.
     Includes layer naming based on name_prefix.
     """
-    # Use SeparableConv2D for efficiency
     x = layers.SeparableConv2D(
         num_filters, 
         kernel_size, 
         padding="same", 
-        use_bias=not use_batch_norm, # No bias needed if Batch Norm follows
+        use_bias=not use_batch_norm,
         name=f"{name_prefix}_sepconv" 
     )(input_tensor)
     
@@ -56,7 +54,6 @@ def U_NET(input_size: Tuple[int, int, int],
 
     inputs = Input(shape=input_size, name="input_image")
     
-    # Standard U-Net filter progression (4 downsampling stages)
     filters = [64, 128, 256, 512] 
     skip_connections = []
     x = inputs
@@ -66,7 +63,6 @@ def U_NET(input_size: Tuple[int, int, int],
     for i, f in enumerate(filters):
         stage = i + 1
         print(f"  Encoder Stage {stage}, Filters: {f}")
-        # Two convolutional blocks per stage
         x = conv_block(x, f, use_batch_norm=use_batch_norm, name_prefix=f"enc{stage}_block1")
         x = conv_block(x, f, use_batch_norm=use_batch_norm, name_prefix=f"enc{stage}_block2")
         skip_connections.append(x) # Save features before pooling
@@ -83,14 +79,12 @@ def U_NET(input_size: Tuple[int, int, int],
 
     # --- Decoder ---
     print("Building Decoder...")
-    # Reverse filters and skip connections for the decoder path
     filters.reverse() 
     skip_connections.reverse()
 
     for i, f in enumerate(filters):
-        stage = len(filters) - i # Stages: 4, 3, 2, 1
+        stage = len(filters) - i
         print(f"  Decoder Stage {stage}, Filters: {f}")
-        # Upsample using Conv2DTranspose
         x = layers.Conv2DTranspose(
             f, 
             kernel_size=2, 
@@ -98,34 +92,25 @@ def U_NET(input_size: Tuple[int, int, int],
             padding='same', 
             name=f"dec{stage}_upsample"
         )(x)
-
-        # Get the corresponding skip connection from the encoder
         skip = skip_connections[i]
-        
-        # Concatenate upsampled features with skip connection features
         x = layers.Concatenate(name=f"dec{stage}_concat")([x, skip])
-
-        # Optional dropout on concatenated features (skip last stage)
         if dropout_rate > 0.0 and i < len(filters) - 1 : 
              x = layers.Dropout(dropout_rate, name=f"dec{stage}_dropout")(x)
 
-        # Two convolutional blocks per stage
         x = conv_block(x, f, use_batch_norm=use_batch_norm, name_prefix=f"dec{stage}_block1")
         x = conv_block(x, f, use_batch_norm=use_batch_norm, name_prefix=f"dec{stage}_block2")
 
     # --- Output Layer ---
     print("Building Output Layer...")
-    # Final 1x1 convolution to map features to the number of classes
     final_activation = "sigmoid" if num_classes == 1 else "softmax"
     outputs = layers.Conv2D(
         num_classes, 
         kernel_size=1, 
         padding="same", 
         activation=final_activation,
-        name="output_mask" # Name the output layer
+        name="output_mask"
     )(x)
 
-    # Define the model
-    model = Model(inputs, outputs, name="U-NET-Segmentation") # Model name
+    model = Model(inputs, outputs, name="U-NET-Segmentation")
     print("U-Net model built successfully.")
     return model

@@ -52,10 +52,8 @@ sys.path.append(PROJECT_ROOT)
 from utils.loss import dice_loss, iou_loss, jaccard_loss
 from utils.metrics import dice_coef, iou_coef
 
-# Constants
 IMG_HEIGHT = 256
 IMG_WIDTH = 256
-# Use a small epsilon for manual IoU calculation stability
 SMOOTH = K.epsilon()
 
 def parse_args() -> argparse.Namespace:
@@ -118,11 +116,6 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
             data = json.load(f)
         quad = data.get("quad", [])
 
-        # Get original dimensions if needed (e.g., from associated image, assume large enough for now)
-        # Or read from JSON if available. If not, create a reasonably large canvas.
-        # Let's assume we need original dims later, but for resizing, only target matters.
-        # We need the original dims to create the initial mask *before* resizing.
-        # Hacky: Try to infer from companion image (less robust)
         img_companion_path_tif = json_path.replace("/ground_truth/", "/images/").replace(".json", ".tif")
         img_companion_path_png = json_path.replace("/ground_truth/", "/images/").replace(".json", ".png")
         img_companion_path_jpg = json_path.replace("/ground_truth/", "/images/").replace(".json", ".jpg")
@@ -139,8 +132,7 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
              print(f"Warning: Could not determine original dimensions for mask from {json_path}. Using default large canvas (2048x2048).")
              orig_h, orig_w = 2048, 2048 # Default large size if image not found
 
-        mask = np.zeros((orig_h, orig_w), dtype=np.uint8) # Start with 0
-
+        mask = np.zeros((orig_h, orig_w), dtype=np.uint8)
         if quad:
             points = np.array(quad, dtype=np.int32)
             if points.ndim == 2:
@@ -149,8 +141,8 @@ def build_mask_from_quad(json_path: str, target_height: int, target_width: int) 
             try:
                 cv2.drawContours(mask, [points], contourIdx=-1, color=255, thickness=cv2.FILLED)
             except Exception as e:
-                print(f"Warning: drawContours failed for {json_path} (Points: {points.shape}). Error: {e}. Mask might be empty.")
-                # Continue with potentially empty mask
+                print(f"Error: drawContours failed for {json_path} (Points: {points.shape}). Error: {e}. Mask might be empty.")
+                sys.exit(1)
 
         mask_resized = cv2.resize(mask, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
         mask_binary = (mask_resized > 128).astype(np.uint8)
@@ -201,8 +193,6 @@ def main():
          sys.exit(1)
 
     print(f"Loading model: {args.model} ...")
-    # Define custom objects *required* by the specific saved model file
-    # ** Edit this dictionary based on the model being loaded **
     required_custom_objects = {
          "dice_loss": dice_loss,
          "dice_coef": dice_coef
@@ -215,7 +205,6 @@ def main():
     except Exception as e:
         print(f"\n--- Error loading model ---")
         print(f"{e}")
-        # (Error message guidance as before) ...
         print("---------------------------\n")
         sys.exit(1)
 
@@ -274,7 +263,7 @@ def main():
         
         if sample_iou < args.iou_threshold:
              low_iou_files.append((file_id, sample_iou))
-             # print(f"\nBelow threshold (IoU={sample_iou:.3f}): {file_id}")
+             print(f"\nBelow threshold (IoU={sample_iou:.3f}): {file_id}")
 
         try:
              iou_metric.update_state(mask_true_tensor, mask_pred_binary)

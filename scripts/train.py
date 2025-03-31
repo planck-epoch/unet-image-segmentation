@@ -235,13 +235,11 @@ def main():
     model.summary(line_length=100)
 
     try:
-        # Use the .samples attribute from the generators (more reliable)
         no_of_training_images = train_image_generator.samples
         no_of_val_images = val_image_generator.samples
         print(f"Found {no_of_training_images} training samples and {no_of_val_images} validation samples.")
     except Exception as e:
         print(f"Warning: Could not read sample count from generators ({e}). Falling back to file listing.")
-        # Fallback (less reliable if structure has extra files/subdirs)
         try:
             no_of_training_images = len(os.listdir(TRAIN_FRAMES_DIR))
             no_of_val_images = len(os.listdir(VAL_FRAMES_DIR))
@@ -324,8 +322,7 @@ def main():
             stopped_epoch = early_stopping.stopped_epoch + 1 # epochs are 0-indexed in callback
             print(f"Early stopping triggered at epoch {stopped_epoch}")
             best_score = early_stopping.best
-        else: # Training completed all epochs
-             # Get the score from the last epoch as a proxy, or load best model to re-evaluate
+        else:
              scores = history.history.get(monitor_metric)
              if scores:
                  best_score = min(scores) if monitor_mode == 'min' else max(scores)

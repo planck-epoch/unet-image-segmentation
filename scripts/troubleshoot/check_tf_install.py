@@ -33,7 +33,6 @@ def check_gpu():
         print(f"✅ Found {len(gpus)} GPU(s):")
         for i, gpu in enumerate(gpus):
             print(f"  - GPU {i}: {gpu.name}")
-        # Attempt to set memory growth for each GPU
         try:
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
@@ -104,7 +103,6 @@ def main():
     print(f"\nCheck completed in {end_time - start_time:.2f} seconds.")
     print("---------------------\n")
 
-    # Exit with status 0 if Keras check passed, 1 otherwise
     sys.exit(0 if keras_ok else 1)
 
 if __name__ == '__main__':
